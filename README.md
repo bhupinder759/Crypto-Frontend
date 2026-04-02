@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nexfin Exchange Frontend
 
-## Getting Started
+Next.js App Router frontend for the crypto exchange backend in `../backend`.
 
-First, run the development server:
+## What is implemented
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- App Router + TypeScript
+- Feature-based frontend architecture under `src/modules`
+- BFF layer under `src/app/api` for backend integration
+- HTTP-only cookie session handling
+- Trading workspace with:
+  - ticker summary
+  - live order book stream
+  - live trades stream
+  - order entry
+  - open orders
+- Wallet workspace with:
+  - portfolio balances
+  - mock deposits
+  - withdrawals
+  - deposit / withdrawal history
+- Orders history page
+- Settings / identity page
+- Dark / light mode via `next-themes`
+- React Query + Zustand + Axios + Zod
+- Dockerfile and GitHub Actions CI
+
+## Folder structure
+
+```text
+src/
+  app/
+  modules/
+  components/
+  lib/
+  store/
+  config/
+  types/
+  i18n/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Required backend endpoints
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This frontend expects the backend to expose:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `GET /api/v1/auth/me`
+- `GET /api/v1/market/symbols`
+- `GET /api/v1/balance/portfolio`
+- `GET /api/v1/wallet/deposits`
+- `GET /api/v1/wallet/withdrawals`
 
-## Learn More
+Those endpoints were added in the paired backend pass.
 
-To learn more about Next.js, take a look at the following resources:
+## Environment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Copy `.env.example` into `.env.local` and adjust if needed.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cp .env.example .env.local
+```
 
-## Deploy on Vercel
+Default local backend:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- HTTP: `http://localhost:4000`
+- WS: `ws://localhost:4000/ws`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Run locally
+
+```bash
+npm ci
+npm run dev
+```
+
+## Quality gates
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
+
+## Docker
+
+```bash
+docker build -t nexfin-frontend .
+docker run --rm -p 3000:3000 --env-file .env.local nexfin-frontend
+```
