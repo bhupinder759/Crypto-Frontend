@@ -22,19 +22,18 @@ export function MarketChart({ candles }: { candles: CandleDto[] }) {
   }
 
   const orderedCandles = candles.slice().reverse();
-  const closes = orderedCandles.map((candle) => Number(candle.close));
-  const minClose = Math.min(...closes);
-  const maxClose = Math.max(...closes);
-  const range = maxClose - minClose || 1;
-  const width = Math.max(orderedCandles.length - 1, 1);
-  const points = orderedCandles
-    .map((candle, index) => {
-      const x = (index / width) * 920 + 20;
-      const normalized = (Number(candle.close) - minClose) / range;
-      const y = 160 - normalized * 120;
-      return `${x},${y}`;
-    })
-    .join(" ");
+  const highs = orderedCandles.map((candle) => Number(candle.high));
+  const lows = orderedCandles.map((candle) => Number(candle.low));
+  const minPrice = Math.min(...lows);
+  const maxPrice = Math.max(...highs);
+  const range = maxPrice - minPrice || 1;
+  const candleWidth = Math.max(720 / orderedCandles.length, 6);
+  const chartLeft = 28;
+  const chartTop = 18;
+  const chartHeight = 144;
+
+  const yForPrice = (price: number) =>
+    chartTop + ((maxPrice - price) / range) * chartHeight;
 
   return (
     <Card>
@@ -43,24 +42,46 @@ export function MarketChart({ candles }: { candles: CandleDto[] }) {
       </CardHeader>
       <CardContent>
         <svg viewBox="0 0 960 180" className="h-[240px] w-full overflow-visible">
-          <defs>
-            <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(6,182,212,0.7)" />
-              <stop offset="100%" stopColor="rgba(6,182,212,0)" />
-            </linearGradient>
-          </defs>
-          <polyline
-            fill="none"
-            stroke="rgb(6,182,212)"
-            strokeWidth="4"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            points={points}
-          />
+          {orderedCandles.map((candle, index) => {
+            const open = Number(candle.open);
+            const high = Number(candle.high);
+            const low = Number(candle.low);
+            const close = Number(candle.close);
+            const x = chartLeft + index * candleWidth + candleWidth / 2;
+            const bodyTop = Math.min(yForPrice(open), yForPrice(close));
+            const bodyBottom = Math.max(yForPrice(open), yForPrice(close));
+            const bodyHeight = Math.max(bodyBottom - bodyTop, 2);
+            const bullish = close >= open;
+            const color = bullish ? "rgb(16,185,129)" : "rgb(239,68,68)";
+
+            return (
+              <g key={candle.id}>
+                <line
+                  x1={x}
+                  x2={x}
+                  y1={yForPrice(high)}
+                  y2={yForPrice(low)}
+                  stroke={color}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <rect
+                  x={x - candleWidth * 0.3}
+                  y={bodyTop}
+                  width={Math.max(candleWidth * 0.6, 3)}
+                  height={bodyHeight}
+                  rx="1.5"
+                  fill={bullish ? "rgba(16,185,129,0.22)" : "rgba(239,68,68,0.22)"}
+                  stroke={color}
+                  strokeWidth="1.5"
+                />
+              </g>
+            );
+          })}
         </svg>
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Low {minClose.toFixed(4)}</span>
-          <span>High {maxClose.toFixed(4)}</span>
+          <span>Low {minPrice.toFixed(4)}</span>
+          <span>High {maxPrice.toFixed(4)}</span>
         </div>
       </CardContent>
     </Card>

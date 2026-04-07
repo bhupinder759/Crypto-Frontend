@@ -27,8 +27,10 @@ export function LoginForm() {
       className="space-y-5"
       onSubmit={form.handleSubmit(async (values) => {
         try {
-          await mutation.mutateAsync(values);
-          router.replace(routes.dashboard);
+          const session = await mutation.mutateAsync(values);
+          router.replace(
+            session.user.role === "ADMIN" ? routes.admin : routes.dashboard,
+          );
           router.refresh();
         } catch (error) {
           form.setError("root", {

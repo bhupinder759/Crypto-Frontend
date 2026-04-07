@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, Waves, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Chart } from "@/components/common/Chart";
 import { AppLogo } from "@/components/common/app-logo";
 import { routes } from "@/lib/constants/routes";
 
@@ -86,6 +87,9 @@ export default function Home() {
             })}
           </section>
         </main>
+        <section className="py-10">
+          <Chart />
+        </section>
       </div>
     </div>
   );

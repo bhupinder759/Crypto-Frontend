@@ -48,12 +48,12 @@ export function useTradesQuery(symbol: string) {
   });
 }
 
-export function useCandlesQuery(symbol: string) {
+export function useCandlesQuery(symbol: string, interval = "1m") {
   return useQuery({
-    queryKey: ["market", "candles", symbol],
-    queryFn: () => getCandles(symbol),
+    queryKey: ["market", "candles", symbol, interval],
+    queryFn: () => getCandles(symbol, interval),
     enabled: Boolean(symbol),
-    refetchInterval: 30_000,
+    refetchInterval: interval === "1m" ? 15_000 : 30_000,
   });
 }
 

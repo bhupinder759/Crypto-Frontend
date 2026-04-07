@@ -22,6 +22,7 @@ import type { SessionPayload } from "@/modules/auth/types";
 
 const navigation = [
   { href: routes.dashboard, matcher: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: routes.admin, matcher: "/admin", label: "Admin", icon: LayoutDashboard, adminOnly: true },
   { href: `${routes.trading}/BTC-USD`, matcher: "/trading", label: "Trading", icon: CandlestickChart },
   { href: routes.wallet, matcher: "/wallet", label: "Wallet", icon: Wallet },
   { href: routes.orders, matcher: "/orders", label: "Orders", icon: CreditCard },
@@ -37,6 +38,9 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const navigationItems = navigation.filter(
+    (item) => !item.adminOnly || session.user.role === "ADMIN",
+  );
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(18,198,194,0.12),_transparent_28%),linear-gradient(180deg,rgba(6,16,32,0.02),transparent_30%)]">
@@ -44,7 +48,7 @@ export function DashboardShell({
         <aside className="border-r border-border/60 bg-background/80 px-4 py-6 backdrop-blur xl:px-6">
           <AppLogo />
           <nav className="mt-10 space-y-1">
-            {navigation.map((item) => {
+            {navigationItems.map((item) => {
               const active =
                 pathname === item.matcher || pathname.startsWith(`${item.matcher}/`);
               const Icon = item.icon;

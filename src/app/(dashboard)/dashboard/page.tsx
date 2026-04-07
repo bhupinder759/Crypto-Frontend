@@ -1,10 +1,16 @@
+import { redirect } from "next/navigation";
 import { MetricCard } from "@/components/common/metric-card";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { routes } from "@/lib/constants/routes";
 import { requireServerSession } from "@/lib/api/server-session";
 
 export default async function DashboardPage() {
   const session = await requireServerSession();
+
+  if (session.user.role === "ADMIN") {
+    redirect(routes.admin);
+  }
 
   return (
     <div className="space-y-8">
