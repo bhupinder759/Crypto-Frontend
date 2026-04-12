@@ -2,7 +2,10 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { backendFetch } from "@/lib/api/backend";
 import { handleRouteError } from "@/lib/api/route-response";
-import { AUTH_COOKIE_NAME } from "@/lib/constants/config";
+import {
+  AUTH_COOKIE_NAME,
+  TRADING_MODE_COOKIE_NAME,
+} from "@/lib/constants/config";
 
 export async function POST() {
   const cookieStore = await cookies();
@@ -17,6 +20,7 @@ export async function POST() {
     }
 
     cookieStore.delete(AUTH_COOKIE_NAME);
+    cookieStore.delete(TRADING_MODE_COOKIE_NAME);
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleRouteError(error);

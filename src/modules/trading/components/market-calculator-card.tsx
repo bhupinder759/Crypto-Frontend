@@ -78,7 +78,11 @@ export function MarketCalculatorCard({
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="calc-size">Size</Label>
-            <Input id="calc-size" value={size} onChange={(event) => setSize(event.target.value)} />
+            <Input
+              id="calc-size"
+              value={size}
+              onChange={(event) => setSize(event.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="calc-entry">Entry</Label>
@@ -103,7 +107,8 @@ export function MarketCalculatorCard({
               Mark Price
             </p>
             <p className="mt-2 text-lg font-medium">
-              {formatNumber(calculations.markPrice, 4)} {instrument?.quoteAsset ?? "USD"}
+              {formatNumber(calculations.markPrice, 4)}{" "}
+              {instrument?.quoteAsset ?? "USD"}
             </p>
           </div>
           <div className="rounded-xl border border-border/60 p-4">
@@ -111,7 +116,8 @@ export function MarketCalculatorCard({
               Position Notional
             </p>
             <p className="mt-2 text-lg font-medium">
-              {formatNumber(calculations.notional, 2)} {instrument?.quoteAsset ?? "USD"}
+              {formatNumber(calculations.notional, 2)}{" "}
+              {instrument?.quoteAsset ?? "USD"}
             </p>
           </div>
           <div className="rounded-xl border border-border/60 p-4">
@@ -119,15 +125,19 @@ export function MarketCalculatorCard({
               Margin Required
             </p>
             <p className="mt-2 text-lg font-medium">
-              {formatNumber(calculations.margin, 2)} {instrument?.quoteAsset ?? "USD"}
+              {formatNumber(calculations.margin, 2)}{" "}
+              {instrument?.quoteAsset ?? "USD"}
             </p>
           </div>
           <div className="rounded-xl border border-border/60 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
               Unrealized PnL
             </p>
-            <p className={`mt-2 text-lg font-medium ${calculations.unrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-              {formatNumber(calculations.unrealizedPnl, 2)} {instrument?.quoteAsset ?? "USD"}
+            <p
+              className={`mt-2 text-lg font-medium ${calculations.unrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+            >
+              {formatNumber(calculations.unrealizedPnl, 2)}{" "}
+              {instrument?.quoteAsset ?? "USD"}
             </p>
             {isForexSymbol(symbol) ? (
               <p className="mt-1 text-xs text-muted-foreground">

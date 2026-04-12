@@ -3,8 +3,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE_NAME } from "@/lib/constants/config";
 import { routes } from "@/lib/constants/routes";
-import { backendFetch } from "@/lib/api/backend";
-import type { AccountDto, SessionPayload, UserDto } from "@/modules/auth/types";
+import { loadSessionPayload } from "@/lib/api/load-session-payload";
+import type { SessionPayload } from "@/modules/auth/types";
 
 const loadServerSession = cache(async (): Promise<SessionPayload | null> => {
   const cookieStore = await cookies();
@@ -15,14 +15,7 @@ const loadServerSession = cache(async (): Promise<SessionPayload | null> => {
   }
 
   try {
-    const [user, account] = await Promise.all([
-      backendFetch<UserDto>("/api/v1/auth/me", { token }),
-      backendFetch<AccountDto>("/api/v1/accounts", {
-        token,
-      }).catch(() => null),
-    ]);
-
-    return { user, account };
+    return await loadSessionPayload(token);
   } catch {
     return null;
   }

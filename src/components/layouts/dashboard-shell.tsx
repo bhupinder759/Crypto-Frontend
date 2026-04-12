@@ -15,18 +15,45 @@ import {
 import { AppLogo } from "@/components/common/app-logo";
 import { LogoutButton } from "@/components/common/logout-button";
 import { ThemeToggle } from "@/components/common/theme-toggle";
+import { TradingModeToggle } from "@/components/common/trading-mode-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { routes } from "@/lib/constants/routes";
 import type { SessionPayload } from "@/modules/auth/types";
 
 const navigation = [
-  { href: routes.dashboard, matcher: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: routes.admin, matcher: "/admin", label: "Admin", icon: LayoutDashboard, adminOnly: true },
-  { href: `${routes.trading}/BTC-USD`, matcher: "/trading", label: "Trading", icon: CandlestickChart },
+  {
+    href: routes.dashboard,
+    matcher: "/dashboard",
+    label: "Overview",
+    icon: LayoutDashboard,
+  },
+  {
+    href: routes.admin,
+    matcher: "/admin",
+    label: "Admin",
+    icon: LayoutDashboard,
+    adminOnly: true,
+  },
+  {
+    href: `${routes.trading}/BTC-USD`,
+    matcher: "/trading",
+    label: "Trading",
+    icon: CandlestickChart,
+  },
   { href: routes.wallet, matcher: "/wallet", label: "Wallet", icon: Wallet },
-  { href: routes.orders, matcher: "/orders", label: "Orders", icon: CreditCard },
-  { href: routes.settings, matcher: "/settings", label: "Settings", icon: Settings },
+  {
+    href: routes.orders,
+    matcher: "/orders",
+    label: "Orders",
+    icon: CreditCard,
+  },
+  {
+    href: routes.settings,
+    matcher: "/settings",
+    label: "Settings",
+    icon: Settings,
+  },
 ];
 
 export function DashboardShell({
@@ -50,7 +77,8 @@ export function DashboardShell({
           <nav className="mt-10 space-y-1">
             {navigationItems.map((item) => {
               const active =
-                pathname === item.matcher || pathname.startsWith(`${item.matcher}/`);
+                pathname === item.matcher ||
+                pathname.startsWith(`${item.matcher}/`);
               const Icon = item.icon;
 
               return (
@@ -81,6 +109,11 @@ export function DashboardShell({
               <p className="font-medium text-foreground">{session.user.role}</p>
             </div>
             <div className="flex items-center gap-3">
+              <TradingModeToggle
+                initialMode={session.tradingMode}
+                realAccount={session.realAccount}
+                demoAccount={session.demoAccount}
+              />
               <Button variant="outline" size="icon" aria-label="Notifications">
                 <Bell className="size-4" />
               </Button>
@@ -99,7 +132,8 @@ export function DashboardShell({
                   {session.user.email}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Account {session.account?.id ?? "not created"}
+                  {session.tradingMode} · Account{" "}
+                  {session.account?.id ?? "not created"}
                 </p>
               </div>
             </div>

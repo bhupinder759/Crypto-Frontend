@@ -1,3 +1,9 @@
+import type { MarketData } from "@/modules/market/types/market-data";
+import type {
+  CandlePageDto,
+  ChartPreferenceDto,
+} from "@/modules/market/types/chart-workspace";
+
 export interface ApiErrorPayload {
   message: string;
   statusCode?: number;
@@ -24,18 +30,9 @@ export interface InstrumentDto {
   allowMarketBuy: boolean;
 }
 
-export interface CandleDto {
-  id: string;
-  symbol: string;
-  interval: string;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
-  openTime: string;
-  closeTime: string;
-}
+export type CandleDto = MarketData;
+export type CandlePageResponseDto = CandlePageDto;
+export type ChartPreferenceResponseDto = ChartPreferenceDto;
 
 export interface TradeDto {
   id: string;

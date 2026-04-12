@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { env } from "@/config/env";
-import { AUTH_COOKIE_NAME } from "@/lib/constants/config";
+import {
+  AUTH_COOKIE_NAME,
+  TRADING_MODE_COOKIE_NAME,
+} from "@/lib/constants/config";
 
 type BackendFetchOptions = RequestInit & {
   token?: string;
@@ -22,6 +25,7 @@ export async function backendFetch<T>(
 ): Promise<T> {
   const cookieStore = await cookies();
   const token = options.token ?? cookieStore.get(AUTH_COOKIE_NAME)?.value;
+  const tradingMode = cookieStore.get(TRADING_MODE_COOKIE_NAME)?.value;
   const url = new URL(path, env.backendHttpUrl);
 
   if (options.searchParams) {
@@ -33,6 +37,10 @@ export async function backendFetch<T>(
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  if (tradingMode === "DEMO" || tradingMode === "REAL") {
+    headers.set("X-Trading-Mode", tradingMode);
   }
 
   let response: Response;

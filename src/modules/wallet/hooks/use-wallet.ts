@@ -19,18 +19,20 @@ export function usePortfolioQuery(accountId?: string) {
   });
 }
 
-export function useDepositsQuery() {
+export function useDepositsQuery(enabled = true) {
   return useQuery({
     queryKey: ["wallet", "deposits"],
     queryFn: () => getDeposits(),
+    enabled,
     refetchInterval: 10_000,
   });
 }
 
-export function useWithdrawalsQuery() {
+export function useWithdrawalsQuery(enabled = true) {
   return useQuery({
     queryKey: ["wallet", "withdrawals"],
     queryFn: () => getWithdrawals(),
+    enabled,
     refetchInterval: 10_000,
   });
 }

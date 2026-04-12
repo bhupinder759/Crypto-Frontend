@@ -1,13 +1,19 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { backendFetch } from "@/lib/api/backend";
+import { loadSessionPayload } from "@/lib/api/load-session-payload";
 import { handleRouteError } from "@/lib/api/route-response";
-import { AUTH_COOKIE_NAME } from "@/lib/constants/config";
-import type { SessionPayload } from "@/modules/auth/types";
+import {
+  AUTH_COOKIE_NAME,
+  TRADING_MODE_COOKIE_NAME,
+} from "@/lib/constants/config";
 
 export async function POST(request: NextRequest) {
   try {
-    const payload = (await request.json()) as { email: string; password: string };
+    const payload = (await request.json()) as {
+      email: string;
+      password: string;
+    };
     const { accessToken } = await backendFetch<{ accessToken: string }>(
       "/api/v1/auth/login",
       {
@@ -25,16 +31,16 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24,
     });
 
-    const [user, account] = await Promise.all([
-      backendFetch<SessionPayload["user"]>("/api/v1/auth/me", {
-        token: accessToken,
-      }),
-      backendFetch<SessionPayload["account"]>("/api/v1/accounts", {
-        token: accessToken,
-      }).catch(() => null),
-    ]);
+    const session = await loadSessionPayload(accessToken);
+    cookieStore.set(TRADING_MODE_COOKIE_NAME, session.tradingMode, {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
 
-    return NextResponse.json({ user, account });
+    return NextResponse.json(session);
   } catch (error) {
     return handleRouteError(error);
   }

@@ -1,9 +1,12 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { backendFetch } from "@/lib/api/backend";
+import { loadSessionPayload } from "@/lib/api/load-session-payload";
 import { handleRouteError } from "@/lib/api/route-response";
-import { AUTH_COOKIE_NAME } from "@/lib/constants/config";
-import type { SessionPayload } from "@/modules/auth/types";
+import {
+  AUTH_COOKIE_NAME,
+  TRADING_MODE_COOKIE_NAME,
+} from "@/lib/constants/config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,27 +44,36 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24,
     });
 
-    const userPromise = backendFetch<SessionPayload["user"]>("/api/v1/auth/me", {
-      token: accessToken,
+    const { accountId } = await backendFetch<{ accountId: string }>(
+      "/api/v1/accounts",
+      {
+        token: accessToken,
+        method: "POST",
+        body: JSON.stringify({
+          country: payload.country,
+        }),
+      },
+    );
+    const session = await loadSessionPayload(accessToken);
+    cookieStore.set(TRADING_MODE_COOKIE_NAME, session.tradingMode, {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
     });
-    const { accountId } = await backendFetch<{ accountId: string }>("/api/v1/accounts", {
-      token: accessToken,
-      method: "POST",
-      body: JSON.stringify({
-        country: payload.country,
-      }),
-    });
-    const accountPromise = backendFetch<SessionPayload["account"]>("/api/v1/accounts", {
-      token: accessToken,
-    }).catch(() => ({
-      id: accountId,
-      status: "ACTIVE",
-      kyc: "NONE",
-      country: payload.country,
-    }));
-    const [user, account] = await Promise.all([userPromise, accountPromise]);
 
-    return NextResponse.json({ user, account });
+    return NextResponse.json({
+      ...session,
+      realAccount: session.realAccount ?? {
+        id: accountId,
+        status: "ACTIVE",
+        kyc: "NONE",
+        country: payload.country,
+        currency: "USD",
+        mode: "REAL",
+      },
+    });
   } catch (error) {
     return handleRouteError(error);
   }

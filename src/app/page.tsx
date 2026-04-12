@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, Waves, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Chart } from "@/components/common/Chart";
 import { AppLogo } from "@/components/common/app-logo";
 import { routes } from "@/lib/constants/routes";
+import { LiveCandlestickChart } from "@/modules/market/components/live-candlestick-chart";
 
 const highlights = [
   {
@@ -88,7 +88,12 @@ export default function Home() {
           </section>
         </main>
         <section className="py-10">
-          <Chart />
+          <LiveCandlestickChart
+            symbol="BTC-USD"
+            interval="1m"
+            title="Live BTC-USD Stream"
+            height={320}
+          />
         </section>
       </div>
     </div>

@@ -1,3 +1,5 @@
+export type TradingMode = "DEMO" | "REAL";
+
 export interface UserDto {
   id: string;
   email: string;
@@ -9,11 +11,23 @@ export interface AccountDto {
   status: string;
   kyc: string;
   country: string;
+  currency: string;
+  mode: TradingMode;
+}
+
+export interface TradingModeContextDto {
+  activeMode: TradingMode;
+  account: AccountDto | null;
+  realAccount: AccountDto | null;
+  demoAccount: AccountDto | null;
 }
 
 export interface SessionPayload {
   user: UserDto;
   account: AccountDto | null;
+  realAccount: AccountDto | null;
+  demoAccount: AccountDto | null;
+  tradingMode: TradingMode;
 }
 
 export interface LoginInput {

@@ -91,16 +91,13 @@ export function useLogoutMutation() {
 export function useCreateAccountMutation() {
   const queryClient = useQueryClient();
   const setSession = useAuthStore((state) => state.setSession);
-  const currentUser = useAuthStore((state) => state.user);
 
   return useMutation({
     mutationFn: (country: string) => createAccount(country),
-    onSuccess: (account) => {
-      if (currentUser) {
-        const nextSession = { user: currentUser, account };
-        setSession(nextSession);
-        queryClient.setQueryData(["session"], nextSession);
-      }
+    onSuccess: async () => {
+      const nextSession = await getSession();
+      setSession(nextSession);
+      queryClient.setQueryData(["session"], nextSession);
       toast.success("Trading account created");
     },
   });

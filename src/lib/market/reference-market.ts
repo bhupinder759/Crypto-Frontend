@@ -1,5 +1,4 @@
 import type {
-  CandleDto,
   InstrumentDto,
   OrderBookDto,
   TickerDto,
@@ -42,8 +41,6 @@ export const REFERENCE_SYMBOLS = [
   ...FOREX_SYMBOLS,
 ];
 
-export const REFERENCE_INTERVALS = ["1m", "5m", "15m", "1h", "4h", "1d"] as const;
-
 type FrankfurterRateResponse = {
   date: string;
   base: string;
@@ -77,25 +74,6 @@ function buildReferenceInstrument(symbol: string): InstrumentDto {
     supportedOrderTypes: ["LIMIT", "MARKET"],
     allowMarketBuy: false,
   };
-}
-
-function intervalToMs(interval: string) {
-  switch (interval) {
-    case "1m":
-      return 60_000;
-    case "5m":
-      return 5 * 60_000;
-    case "15m":
-      return 15 * 60_000;
-    case "1h":
-      return 60 * 60_000;
-    case "4h":
-      return 4 * 60 * 60_000;
-    case "1d":
-      return 24 * 60 * 60_000;
-    default:
-      return 60_000;
-  }
 }
 
 function decimalsForSymbol(symbol: string) {
@@ -147,38 +125,6 @@ function getSyntheticCryptoTicker(symbol: string): TickerDto {
     volume24h: String(Math.round(volume)),
     priceChange24h: formatPrice(symbol, priceChange),
   };
-}
-
-function getSyntheticCryptoCandles(
-  symbol: string,
-  interval = "1m",
-  limit = 60,
-): CandleDto[] {
-  const step = intervalToMs(interval);
-  const now = Date.now();
-
-  return Array.from({ length: limit }, (_, index) => {
-    const openTimeMs = now - (limit - index) * step;
-    const closeTimeMs = openTimeMs + step - 1;
-    const open = syntheticPriceAt(symbol, openTimeMs);
-    const close = syntheticPriceAt(symbol, closeTimeMs);
-    const high = Math.max(open, close) * 1.0018;
-    const low = Math.min(open, close) * 0.9982;
-    const volume = 25 + ((index % 9) + 1) * 3;
-
-    return {
-      id: `${symbol}-${interval}-${openTimeMs}`,
-      symbol,
-      interval,
-      open: formatPrice(symbol, open),
-      high: formatPrice(symbol, high),
-      low: formatPrice(symbol, low),
-      close: formatPrice(symbol, close),
-      volume: String(volume),
-      openTime: new Date(openTimeMs).toISOString(),
-      closeTime: new Date(closeTimeMs).toISOString(),
-    };
-  });
 }
 
 function getSyntheticCryptoTrades(symbol: string, limit = 50): TradeDto[] {
@@ -296,55 +242,6 @@ export async function getReferenceTicker(symbol: string): Promise<TickerDto | nu
   }
 
   return null;
-}
-
-export async function getReferenceCandles(
-  symbol: string,
-  interval = "1m",
-  limit = 60,
-): Promise<CandleDto[]> {
-  if (isCryptoSymbol(symbol)) {
-    return getSyntheticCryptoCandles(symbol, interval, limit);
-  }
-
-  if (isForexSymbol(symbol)) {
-    const { baseAsset, quoteAsset } = getAssetPair(symbol);
-    const to = new Date();
-    const from = new Date();
-    from.setDate(to.getDate() - Math.max(limit * 2, 30));
-
-    const payload = await fetchJson<FrankfurterRateResponse[]>(
-      `${FRANKFURTER_BASE_URL}/rates?base=${baseAsset}&quotes=${quoteAsset}&from=${from.toISOString().slice(0, 10)}&to=${to.toISOString().slice(0, 10)}`,
-    );
-
-    const sorted = payload
-      .slice()
-      .sort((left, right) => left.date.localeCompare(right.date))
-      .slice(-limit);
-
-    return sorted.map((entry, index) => {
-      const previousRate = sorted[index - 1]?.rate ?? entry.rate;
-      const high = Math.max(previousRate, entry.rate);
-      const low = Math.min(previousRate, entry.rate);
-      const openTime = `${entry.date}T00:00:00.000Z`;
-      const closeTime = `${entry.date}T23:59:59.999Z`;
-
-      return {
-        id: `${symbol}-${entry.date}`,
-        symbol,
-        interval: "1d",
-        open: String(previousRate),
-        high: String(high),
-        low: String(low),
-        close: String(entry.rate),
-        volume: "0",
-        openTime,
-        closeTime,
-      };
-    });
-  }
-
-  return [];
 }
 
 export async function getReferenceTrades(
