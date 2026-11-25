@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { io, type Socket } from "socket.io-client";
 import { env } from "@/config/env";
 import type { MarketData } from "@/modules/market/types/market-data";
@@ -41,6 +41,66 @@ function getSharedSocket(): MarketSocket {
   }
 
   return sharedSocket;
+}
+
+export type MarketSocketStatus = "connecting" | "connected" | "reconnecting" | "offline";
+
+let socketStatus: MarketSocketStatus = "connecting";
+const statusListeners = new Set<() => void>();
+let statusWired = false;
+
+function setSocketStatus(next: MarketSocketStatus) {
+  if (socketStatus === next) return;
+  socketStatus = next;
+  statusListeners.forEach((listener) => listener());
+}
+
+function wireSocketStatus(socket: MarketSocket) {
+  if (statusWired) return;
+  statusWired = true;
+  if (socket.connected) socketStatus = "connected";
+  socket.on("connect", () => setSocketStatus("connected"));
+  socket.on("disconnect", () => setSocketStatus("reconnecting"));
+  socket.on("connect_error", () =>
+    setSocketStatus(socket.active ? "reconnecting" : "offline"),
+  );
+  socket.io.on("reconnect_attempt", () => setSocketStatus("reconnecting"));
+  socket.io.on("reconnect_failed", () => setSocketStatus("offline"));
+  if (typeof window !== "undefined") {
+    window.addEventListener("offline", () => setSocketStatus("offline"));
+    window.addEventListener("online", () => {
+      if (!socket.connected) {
+        setSocketStatus("reconnecting");
+        socket.connect();
+      }
+    });
+  }
+}
+
+function subscribeSocketStatus(listener: () => void) {
+  wireSocketStatus(getSharedSocket());
+  statusListeners.add(listener);
+  return () => {
+    statusListeners.delete(listener);
+  };
+}
+
+/** Live connection state of the shared `/market-data` socket. */
+export function useMarketSocketStatus(): MarketSocketStatus {
+  return useSyncExternalStore(
+    subscribeSocketStatus,
+    () => socketStatus,
+    () => "connecting",
+  );
+}
+
+/** Reconnects the shared market socket on demand (e.g. from the status pill). */
+export function reconnectMarketSocket() {
+  const socket = getSharedSocket();
+  if (!socket.connected) {
+    setSocketStatus("reconnecting");
+    socket.connect();
+  }
 }
 
 export function useMarketSocket(symbol: string, interval: string) {

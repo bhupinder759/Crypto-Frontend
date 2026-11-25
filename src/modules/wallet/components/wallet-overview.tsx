@@ -27,11 +27,11 @@ export function WalletOverview({
     <div className="space-y-6">
       <PageHeader
         eyebrow="Custody"
-        title="Wallet Operations"
+        title="Wallet"
         description={
           mode === "DEMO"
-            ? "Review your demo wallet and instantly top it up with virtual funds."
-            : "Review balances, register deposits, and request withdrawals against the backend wallet workflows."
+            ? "Demo balances. Top up virtual funds anytime."
+            : "Balances, deposits and withdrawals."
         }
       />
       <WalletBalanceList balances={portfolioQuery.data ?? []} />

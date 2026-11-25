@@ -138,7 +138,7 @@ export function TradingWorkspace({
       <PageHeader
         eyebrow="Execution"
         title={`${symbol} Trading`}
-        description="Execution workspace with backend market data, live candle updates, and real-time sizing calculations."
+        description="Spot market"
       />
       <MarketToolbar
         symbol={symbol}

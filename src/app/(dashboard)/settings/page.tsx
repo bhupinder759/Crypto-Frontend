@@ -10,7 +10,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Identity"
         title="Settings"
-        description="Review authenticated user state and account metadata coming from the backend identity and account modules."
+        description="Profile, account and security preferences."
       />
       <Card>
         <CardHeader>

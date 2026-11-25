@@ -21,8 +21,8 @@ export function AdminOverview() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Administration"
-        title="Control Tower"
-        description="Operational visibility for users, balances, order flow, and payout queues."
+        title="Admin"
+        description="Users, balances, order flow and withdrawal queue."
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <MetricCard title="Users" value={overview ? formatNumber(overview.users, 0) : "--"} />

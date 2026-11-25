@@ -107,7 +107,7 @@ export function TradeForm({
       <CardHeader>
         <CardTitle>Trade Ticket</CardTitle>
         <CardDescription>
-          Exchange rules are enforced per instrument so the ticket only submits orders the engine can actually accept.
+          Limit and market orders
         </CardDescription>
       </CardHeader>
       <CardContent>

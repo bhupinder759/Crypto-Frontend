@@ -13,7 +13,7 @@ export function OrdersOverview({ accountId }: { accountId?: string }) {
       <PageHeader
         eyebrow="Execution History"
         title="Orders"
-        description="Track placed, cancelled, and filled orders across the exchange backend."
+        description="Open, filled and cancelled orders."
       />
       <Card>
         <CardHeader>
