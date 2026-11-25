@@ -2,7 +2,12 @@
  * Response-shape adapters. The backend is moving money to decimal strings and
  * may change shapes; keep all coercion here so components stay untouched.
  */
-import type { OrderBookDto, TickerDto, TradeDto } from "@/types/api.types";
+import type {
+  MarketTickerDto,
+  OrderBookDto,
+  TickerDto,
+  TradeDto,
+} from "@/types/api.types";
 
 type RawLevel =
   | [string | number, string | number]
@@ -83,5 +88,36 @@ export function normalizeTicker(raw: unknown, symbol: string): TickerDto | null 
     low24h: toDecimalString(t.low24h ?? t.low ?? last),
     volume24h: toDecimalString(t.volume24h ?? t.volume ?? 0),
     priceChange24h: toDecimalString(t.priceChange24h ?? t.priceChange ?? 0),
+  };
+}
+
+/** Normalises the 2.2 MarketTicker (also accepts the legacy ticker shape). */
+export function normalizeMarketTicker(raw: unknown): MarketTickerDto | null {
+  if (!raw || typeof raw !== "object") return null;
+  const t = raw as Record<string, unknown>;
+  const symbol = t.symbol ? String(t.symbol) : "";
+  const last = t.lastPrice ?? t.last ?? t.price;
+  if (!symbol || last == null || !(Number(last) > 0)) return null;
+  const lastPrice = toDecimalString(last);
+  const change = toDecimalString(t.priceChange24h ?? t.priceChange ?? 0);
+  const open = t.open24h != null ? toDecimalString(t.open24h) : null;
+  const percent =
+    t.priceChangePercent24h != null
+      ? toDecimalString(t.priceChangePercent24h)
+      : open && Number(open) > 0
+        ? String((Number(change) / Number(open)) * 100)
+        : "0";
+  return {
+    symbol,
+    lastPrice,
+    open24h: open ?? String(Number(lastPrice) - Number(change)),
+    high24h: toDecimalString(t.high24h ?? t.high ?? last),
+    low24h: toDecimalString(t.low24h ?? t.low ?? last),
+    volume24h: toDecimalString(t.volume24h ?? t.volume ?? 0),
+    quoteVolume24h: toDecimalString(t.quoteVolume24h ?? 0),
+    priceChange24h: change,
+    priceChangePercent24h: percent,
+    eventTime: Number(t.eventTime ?? Date.now()),
+    source: String(t.source ?? "internal"),
   };
 }

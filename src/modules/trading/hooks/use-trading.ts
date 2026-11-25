@@ -3,15 +3,20 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { socketClient } from "@/lib/websocket/socketClient";
 import {
   useOrderBookQuery,
   useTradesQuery,
 } from "@/modules/market/hooks/use-market-data";
-import { useMarketSocket } from "@/modules/market/hooks/use-market-socket";
 import {
+  getSharedSocket,
+  retainRoom,
+  useMarketSocket,
+} from "@/modules/market/hooks/use-market-socket";
+import { useTickersStore } from "@/modules/market/store/tickers.store";
+import {
+  normalizeMarketTicker,
   normalizeOrderBook,
-  normalizeTrade,
+  normalizeTrades,
 } from "@/modules/market/services/normalize";
 import {
   cancelOrder,
@@ -182,46 +187,72 @@ export function useFillNotifications(orders: OrderDto[] | undefined) {
 }
 
 /**
- * Wires the live streams for one market (engine `/ws` book + trades and the
- * socket.io book) into the trading store. Call once per terminal.
+ * Wires the live Socket.IO streams for one market (engine `orderbook`,
+ * upstream `live_orderbook`, `trades`, `ticker`) into the stores.
+ * Call once per terminal.
  */
 export function useMarketStreams(symbol: string, interval: string) {
   const setInternalOrderBook = useTradingStore((s) => s.setInternalOrderBook);
   const setExternalOrderBook = useTradingStore((s) => s.setExternalOrderBook);
-  const prependTrade = useTradingStore((s) => s.prependTrade);
-  const { socketRef } = useMarketSocket(symbol, interval);
+  const prependTrades = useTradingStore((s) => s.prependTrades);
+  const mergeTickers = useTickersStore((s) => s.merge);
+  // Keeps the candle room joined (also joins the symbol room server-side).
+  useMarketSocket(symbol, interval);
 
   useEffect(() => {
     if (!symbol) return;
-    const offBook = socketClient.subscribe(`orderbook:${symbol}`, (payload) => {
-      const book = normalizeOrderBook(payload);
-      if (book) setInternalOrderBook(symbol, { ...book, symbol });
-    });
-    const offTrades = socketClient.subscribe(`trades:${symbol}`, (payload) => {
-      const trade = normalizeTrade(payload);
-      if (trade) prependTrade(symbol, { ...trade, symbol });
-    });
-    return () => {
-      offBook();
-      offTrades();
-    };
-  }, [prependTrade, setInternalOrderBook, symbol]);
+    const socket = getSharedSocket();
+    const release = retainRoom(
+      `symbol:${symbol}`,
+      (s) => s.emit("subscribe_symbol", { symbol }),
+      (s) => s.emit("unsubscribe_symbol", { symbol }),
+    );
 
-  useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket) return;
-    const handle = (payload: OrderBookDto) => {
+    const onInternalBook = (payload: unknown) => {
       const book = normalizeOrderBook(payload);
-      if (book && book.symbol === symbol) setExternalOrderBook(symbol, book);
+      if (book && book.symbol === symbol) {
+        setInternalOrderBook(symbol, { ...book, source: "internal" });
+      }
     };
-    socket.on("live_orderbook", handle);
+    const onExternalBook = (payload: unknown) => {
+      const book = normalizeOrderBook(payload);
+      if (book && book.symbol === symbol) {
+        setExternalOrderBook(symbol, { ...book, source: "external" });
+      }
+    };
+    const onTrades = (payload: unknown[]) => {
+      const trades = normalizeTrades(payload).filter((t) => !t.symbol || t.symbol === symbol);
+      // Server sends oldest → newest; the store keeps newest first.
+      if (trades.length) prependTrades(symbol, trades.reverse());
+    };
+    const onTicker = (payload: unknown) => {
+      const ticker = normalizeMarketTicker(payload);
+      if (ticker && ticker.symbol === symbol) mergeTickers([ticker]);
+    };
+
+    socket.on("orderbook", onInternalBook);
+    socket.on("live_orderbook", onExternalBook);
+    socket.on("trades", onTrades);
+    socket.on("ticker", onTicker);
     return () => {
-      socket.off("live_orderbook", handle);
+      socket.off("orderbook", onInternalBook);
+      socket.off("live_orderbook", onExternalBook);
+      socket.off("trades", onTrades);
+      socket.off("ticker", onTicker);
+      release();
     };
-  }, [setExternalOrderBook, socketRef, symbol]);
+  }, [mergeTickers, prependTrades, setExternalOrderBook, setInternalOrderBook, symbol]);
 }
 
-/** Best available book: live socket.io → live engine → REST snapshot. */
+function hasLevels(book: OrderBookDto | null) {
+  return Boolean(book && (book.bids.length > 0 || book.asks.length > 0));
+}
+
+/**
+ * Book shown in the terminal: the exchange's own engine book when it has
+ * liquidity (that is what orders match against), otherwise the upstream
+ * reference book, otherwise the REST snapshot.
+ */
 export function useLiveOrderBook(symbol: string): OrderBookDto | null {
   const external = useTradingStore(
     (s) => s.realtimeBySymbol[symbol]?.externalOrderBook ?? null,
@@ -230,6 +261,7 @@ export function useLiveOrderBook(symbol: string): OrderBookDto | null {
     (s) => s.realtimeBySymbol[symbol]?.internalOrderBook ?? null,
   );
   const query = useOrderBookQuery(symbol);
+  if (hasLevels(internal)) return internal;
   return external ?? internal ?? query.data ?? null;
 }
 

@@ -12,7 +12,6 @@ import {
   getInstruments,
   getOrderBook,
   getSymbols,
-  getTicker,
   getTrades,
   updateChartPreference,
 } from "@/modules/market/services/market.api";
@@ -26,15 +25,6 @@ export function useSymbolsQuery() {
     queryKey: ["market", "symbols"],
     queryFn: getSymbols,
     staleTime: 60_000,
-  });
-}
-
-export function useTickerQuery(symbol: string) {
-  return useQuery({
-    queryKey: ["market", "ticker", symbol],
-    queryFn: () => getTicker(symbol),
-    enabled: Boolean(symbol),
-    refetchInterval: 30_000,
   });
 }
 

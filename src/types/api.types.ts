@@ -51,4 +51,21 @@ export interface OrderBookDto {
   bids: [string, string][];
   asks: [string, string][];
   timestamp: number;
+  /** "internal" = exchange engine, "external" = upstream reference book. */
+  source?: "internal" | "external";
+}
+
+/** Live ticker (REST `/market/tickers`, Socket.IO `tickers` / `ticker`). */
+export interface MarketTickerDto {
+  symbol: string;
+  lastPrice: string;
+  open24h: string;
+  high24h: string;
+  low24h: string;
+  volume24h: string;
+  quoteVolume24h: string;
+  priceChange24h: string;
+  priceChangePercent24h: string;
+  eventTime: number;
+  source: "binance" | "internal" | string;
 }

@@ -211,6 +211,18 @@ export function OrderBook({
             <BarChart3 className="size-3.5" />
           </button>
         </div>
+        {book?.source ? (
+          <span
+            className="mr-auto ml-1 text-[10px] text-muted-foreground"
+            title={
+              book.source === "internal"
+                ? "Exchange order book (orders match here)"
+                : "Reference book from the upstream market"
+            }
+          >
+            {book.source === "internal" ? "Exchange" : "Reference"}
+          </span>
+        ) : null}
         <Select value={grouping} onValueChange={setGrouping}>
           <SelectTrigger
             size="sm"

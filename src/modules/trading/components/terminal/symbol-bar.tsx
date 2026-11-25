@@ -22,10 +22,8 @@ import { cn } from "@/lib/utils";
 import { formatCompact } from "@/lib/utils/formatter";
 import { formatFixed } from "@/lib/utils/precision";
 import { routes } from "@/lib/constants/routes";
-import {
-  useSymbolsQuery,
-  useTickerQuery,
-} from "@/modules/market/hooks/use-market-data";
+import { useSymbolsQuery } from "@/modules/market/hooks/use-market-data";
+import { useLiveTickers } from "@/modules/market/hooks/use-market-overview";
 import { useTradingStore } from "@/modules/trading/store/trading.store";
 
 function PairSwitcher({ symbol }: { symbol: string }) {
@@ -141,22 +139,20 @@ export function SymbolBar({
   symbol: string;
   priceDecimals: number;
 }) {
-  const tickerQuery = useTickerQuery(symbol);
+  const ticker = useLiveTickers()[symbol];
   const lastCandle = useTradingStore(
     (s) => s.realtimeBySymbol[symbol]?.lastCandle ?? null,
   );
-  const ticker = tickerQuery.data;
 
   const stats = useMemo(() => {
-    const last =
-      lastCandle?.close ?? (ticker ? Number(ticker.lastPrice) : null);
+    // The live ticker (~1/s) is the source of truth; candles fill gaps.
+    const last = ticker ? Number(ticker.lastPrice) : (lastCandle?.close ?? null);
     const high = Math.max(Number(ticker?.high24h ?? 0), lastCandle?.high ?? 0);
     const lowCandidates = [Number(ticker?.low24h), lastCandle?.low].filter(
       (v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0,
     );
     const changeAbs = Number(ticker?.priceChange24h ?? 0);
-    const open = last != null ? last - changeAbs : null;
-    const changePct = open && open !== 0 ? (changeAbs / open) * 100 : 0;
+    const changePct = Number(ticker?.priceChangePercent24h ?? 0);
     return {
       last,
       high: high > 0 ? high : null,

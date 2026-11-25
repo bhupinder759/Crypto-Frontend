@@ -1,13 +1,11 @@
 /**
  * Derived market summaries.
  *
- * Today the backend only has a per-symbol ticker + candles, so 24h stats fall
- * back to 1h candles and sparklines are built from 7d of 1h closes. When the
- * live ticker stream (backend 2.2) lands, feed it into `buildMarketSummary`
- * (or replace `useMarketSummaries`) — consumers only see `MarketSummary`.
+ * 24h stats come from the live ticker stream (Socket.IO `tickers`); 1h
+ * candles are only a fallback and the source of the 7d sparkline.
  */
 import type { MarketData } from "@/modules/market/types/market-data";
-import type { TickerDto } from "@/types/api.types";
+import type { MarketTickerDto } from "@/types/api.types";
 
 export type MarketSummary = {
   symbol: string;
@@ -35,7 +33,7 @@ const num = (value: string | number | undefined | null) => {
 
 export function buildMarketSummary(
   symbol: string,
-  ticker: TickerDto | null | undefined,
+  ticker: MarketTickerDto | null | undefined,
   candles: MarketData[] | undefined,
 ): MarketSummary {
   const [base = symbol, quote = "USD"] = symbol.split("-");
@@ -65,7 +63,10 @@ export function buildMarketSummary(
     }
   }
 
-  const open24h = last != null && change != null ? last - change : null;
+  const open24h =
+    num(ticker?.open24h) ?? (last != null && change != null ? last - change : null);
+  const tickerPct = num(ticker?.priceChangePercent24h);
+  const tickerQuoteVolume = num(ticker?.quoteVolume24h);
   return {
     symbol,
     base,
@@ -73,11 +74,20 @@ export function buildMarketSummary(
     last,
     change24h: change,
     changePct24h:
-      open24h && change != null && open24h !== 0 ? (change / open24h) * 100 : null,
+      ticker && tickerPct != null
+        ? tickerPct
+        : open24h && change != null && open24h !== 0
+          ? (change / open24h) * 100
+          : null,
     high24h: high,
     low24h: low,
     volume24h: volume,
-    quoteVolume24h: volume != null && last != null ? volume * last : null,
+    quoteVolume24h:
+      tickerQuoteVolume && tickerQuoteVolume > 0
+        ? tickerQuoteVolume
+        : volume != null && last != null
+          ? volume * last
+          : null,
     sparkline,
     source,
   };

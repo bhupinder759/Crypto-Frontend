@@ -8,7 +8,14 @@ import type { OrderBookDto } from "@/types/api.types";
 
 type ServerToClientEvents = {
   live_candle: (payload: MarketData) => void;
+  /** Upstream (Binance) reference book. */
   live_orderbook: (payload: OrderBookDto) => void;
+  /** Exchange matching-engine book for a subscribed symbol. */
+  orderbook: (payload: unknown) => void;
+  /** All-symbol ticker snapshot, then deltas every ~1s. */
+  tickers: (payload: unknown[]) => void;
+  ticker: (payload: unknown) => void;
+  trades: (payload: unknown[]) => void;
   market_connected: (payload: { clientId: string }) => void;
   market_subscription_status: (payload: {
     room: string;
@@ -19,9 +26,13 @@ type ServerToClientEvents = {
 type ClientToServerEvents = {
   subscribe_market: (payload: { symbol: string; interval: string }) => void;
   unsubscribe_market: (payload: { symbol: string; interval: string }) => void;
+  subscribe_tickers: () => void;
+  unsubscribe_tickers: () => void;
+  subscribe_symbol: (payload: { symbol: string }) => void;
+  unsubscribe_symbol: (payload: { symbol: string }) => void;
 };
 
-type MarketSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+export type MarketSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 let sharedSocket: MarketSocket | null = null;
 const subscriptionCounts = new Map<string, number>();
@@ -30,7 +41,7 @@ function getSubscriptionKey(symbol: string, interval: string) {
   return `${symbol}:${interval}`;
 }
 
-function getSharedSocket(): MarketSocket {
+export function getSharedSocket(): MarketSocket {
   if (!sharedSocket) {
     sharedSocket = io(`${env.backendHttpUrl}/market-data`, {
       transports: ["websocket"],
@@ -41,6 +52,43 @@ function getSharedSocket(): MarketSocket {
   }
 
   return sharedSocket;
+}
+
+type Room = { count: number; join: (socket: MarketSocket) => void; leave: (socket: MarketSocket) => void };
+const rooms = new Map<string, Room>();
+let roomsWired = false;
+
+/**
+ * Ref-counted room membership on the shared socket. `join` runs now (if
+ * connected) and again after every reconnect; `leave` runs when the last
+ * holder releases. Returns the release function.
+ */
+export function retainRoom(
+  key: string,
+  join: (socket: MarketSocket) => void,
+  leave: (socket: MarketSocket) => void,
+) {
+  const socket = getSharedSocket();
+  if (!roomsWired) {
+    roomsWired = true;
+    socket.on("connect", () => rooms.forEach((room) => room.join(socket)));
+  }
+  const existing = rooms.get(key);
+  if (existing) {
+    existing.count += 1;
+  } else {
+    rooms.set(key, { count: 1, join, leave });
+    if (socket.connected) join(socket);
+  }
+  return () => {
+    const room = rooms.get(key);
+    if (!room) return;
+    room.count -= 1;
+    if (room.count <= 0) {
+      rooms.delete(key);
+      if (socket.connected) room.leave(socket);
+    }
+  };
 }
 
 export type MarketSocketStatus = "connecting" | "connected" | "reconnecting" | "offline";

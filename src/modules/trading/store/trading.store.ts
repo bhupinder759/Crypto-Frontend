@@ -27,6 +27,8 @@ type TradingStore = {
   setInternalOrderBook: (symbol: string, orderBook: OrderBookDto) => void;
   setExternalOrderBook: (symbol: string, orderBook: OrderBookDto) => void;
   prependTrade: (symbol: string, trade: TradeDto) => void;
+  /** Batch insert (newest first); skips ids already present. */
+  prependTrades: (symbol: string, trades: TradeDto[]) => void;
   setLastCandle: (symbol: string, candle: MarketData) => void;
 };
 
@@ -55,6 +57,16 @@ export const useTradingStore = create<TradingStore>((set) => ({
       if (current.some((item) => item.id === trade.id)) return state;
       return patch(state, symbol, {
         trades: [trade, ...current].slice(0, MAX_TRADES),
+      });
+    }),
+  prependTrades: (symbol, trades) =>
+    set((state) => {
+      const current = state.realtimeBySymbol[symbol]?.trades ?? [];
+      const seen = new Set(current.map((t) => t.id));
+      const fresh = trades.filter((t) => !seen.has(t.id));
+      if (fresh.length === 0) return state;
+      return patch(state, symbol, {
+        trades: [...fresh, ...current].slice(0, MAX_TRADES),
       });
     }),
   setLastCandle: (symbol, candle) =>
