@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { Route } from "next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { routes } from "@/lib/constants/routes";
 import { loginSchema, type LoginSchema } from "@/modules/auth/schema/auth.schema";
 import { useLoginMutation } from "@/modules/auth/hooks/use-auth-session";
 
-export function LoginForm() {
+export function LoginForm({ next = null }: { next?: string | null }) {
   const router = useRouter();
   const mutation = useLoginMutation();
   const form = useForm<LoginSchema>({
@@ -29,7 +30,10 @@ export function LoginForm() {
         try {
           const session = await mutation.mutateAsync(values);
           router.replace(
-            session.user.role === "ADMIN" ? routes.admin : routes.dashboard,
+            (next ??
+              (session.user.role === "ADMIN"
+                ? routes.admin
+                : routes.dashboard)) as Route,
           );
           router.refresh();
         } catch (error) {
