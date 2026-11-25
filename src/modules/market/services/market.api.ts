@@ -1,6 +1,10 @@
 "use client";
 
 import { apiGet, apiPut } from "@/lib/api/api-client";
+import {
+  normalizeOrderBook,
+  normalizeTrades,
+} from "@/modules/market/services/normalize";
 import type {
   CandlePageResponseDto,
   ChartPreferenceResponseDto,
@@ -29,8 +33,10 @@ export function getTicker(symbol: string) {
   return apiGet<TickerDto>("/market/ticker", { symbol });
 }
 
-export function getTrades(symbol: string, limit = 50) {
-  return apiGet<TradeDto[]>("/market/trades", { symbol, limit });
+export async function getTrades(symbol: string, limit = 50): Promise<TradeDto[]> {
+  return normalizeTrades(
+    await apiGet<unknown>("/market/trades", { symbol, limit }),
+  );
 }
 
 export function getCandlesPage(
@@ -47,8 +53,10 @@ export function getCandlesPage(
   });
 }
 
-export function getOrderBook(symbol: string) {
-  return apiGet<OrderBookDto | null>("/market/orderbook", { symbol });
+export async function getOrderBook(symbol: string): Promise<OrderBookDto | null> {
+  return normalizeOrderBook(
+    await apiGet<unknown>("/market/orderbook", { symbol }),
+  );
 }
 
 export function getChartPreference(symbol: string, interval: string) {

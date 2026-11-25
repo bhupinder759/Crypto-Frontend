@@ -59,18 +59,6 @@ export function useTradesQuery(symbol: string) {
   });
 }
 
-export function useCandlesQuery(symbol: string, interval = "1m") {
-  return useQuery({
-    queryKey: ["market", "candles", symbol, interval],
-    queryFn: async () => {
-      const response = await getCandlesPage(symbol, interval, 120);
-      return response.items;
-    },
-    enabled: Boolean(symbol),
-    staleTime: 15_000,
-  });
-}
-
 export function useInfiniteCandlesQuery(symbol: string, interval = "1m") {
   return useInfiniteQuery({
     queryKey: ["market", "candles", "infinite", symbol, interval],

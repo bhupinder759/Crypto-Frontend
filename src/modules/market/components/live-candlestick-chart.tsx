@@ -177,6 +177,8 @@ export function LiveCandlestickChart({
   onLiveCandle,
   persistPreferences = true,
   showTools = true,
+  bare = false,
+  toolbar,
 }: {
   symbol: string;
   interval: string;
@@ -186,6 +188,10 @@ export function LiveCandlestickChart({
   /** Sync focus/indicators/drawings to the user's saved preferences (needs auth). */
   persistPreferences?: boolean;
   showTools?: boolean;
+  /** Borderless, fills its parent's height (trading terminal). */
+  bare?: boolean;
+  /** Extra controls rendered at the left of the bare toolbar (e.g. intervals). */
+  toolbar?: React.ReactNode;
 }) {
   const key = getChartWorkspaceKey(symbol, interval);
   const { socketRef, isConnected } = useMarketSocket(symbol, interval);
@@ -666,6 +672,109 @@ export function LiveCandlestickChart({
     };
   }, [interval, onLiveCandle, socketRef, symbol]);
 
+  const toolButtons = (
+    <>
+      <Button
+        type="button"
+        variant={
+          workspace.indicatorConfig.some((item) => item.id === "sma-20")
+            ? "default"
+            : "outline"
+        }
+        size={bare ? "xs" : "sm"}
+        onClick={() => toggleSmaIndicator(key, 20)}
+      >
+        SMA 20
+      </Button>
+      <Button
+        type="button"
+        variant={
+          workspace.indicatorConfig.some((item) => item.id === "sma-50")
+            ? "default"
+            : "outline"
+        }
+        size={bare ? "xs" : "sm"}
+        onClick={() => toggleSmaIndicator(key, 50)}
+      >
+        SMA 50
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size={bare ? "xs" : "sm"}
+        disabled={currentPrice == null}
+        onClick={() => {
+          if (currentPrice == null) {
+            return;
+          }
+
+          addHorizontalLine(key, { price: currentPrice });
+        }}
+      >
+        Horizontal Line
+      </Button>
+      <Button
+        type="button"
+        variant={workspace.pendingTrendAnchor ? "default" : "outline"}
+        size={bare ? "xs" : "sm"}
+        onClick={() => {
+          if (workspace.pendingTrendAnchor) {
+            clearPendingTrendLine(key);
+            return;
+          }
+
+          const anchorCandle = lastCandle;
+          if (!anchorCandle) {
+            return;
+          }
+
+          startTrendLine(key, {
+            time: anchorCandle.time,
+            price: anchorCandle.close,
+          });
+        }}
+      >
+        {workspace.pendingTrendAnchor ? "Cancel Trend" : "Trend Line"}
+      </Button>
+    </>
+  );
+
+  if (bare) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {showTools || toolbar ? (
+          <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-1">
+            {toolbar}
+            {showTools ? (
+              <div className="ml-auto flex flex-wrap items-center gap-1">
+                {toolButtons}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="relative min-h-0 w-full flex-1">
+          <div ref={containerRef} className="absolute inset-0" />
+          {chartCandles.length === 0 && (isLoading || isError) ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80">
+              {isError ? (
+                <QueryErrorCard
+                  compact
+                  title="Market history unavailable"
+                  error={error}
+                  onRetry={refetch}
+                />
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Loading market history…
+                </span>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="gap-4">
@@ -686,68 +795,7 @@ export function LiveCandlestickChart({
           </div>
         </div>
         <div className={showTools ? "flex flex-wrap gap-2" : "hidden"}>
-          <Button
-            type="button"
-            variant={
-              workspace.indicatorConfig.some((item) => item.id === "sma-20")
-                ? "default"
-                : "outline"
-            }
-            size="sm"
-            onClick={() => toggleSmaIndicator(key, 20)}
-          >
-            SMA 20
-          </Button>
-          <Button
-            type="button"
-            variant={
-              workspace.indicatorConfig.some((item) => item.id === "sma-50")
-                ? "default"
-                : "outline"
-            }
-            size="sm"
-            onClick={() => toggleSmaIndicator(key, 50)}
-          >
-            SMA 50
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={currentPrice == null}
-            onClick={() => {
-              if (currentPrice == null) {
-                return;
-              }
-
-              addHorizontalLine(key, { price: currentPrice });
-            }}
-          >
-            Horizontal Line
-          </Button>
-          <Button
-            type="button"
-            variant={workspace.pendingTrendAnchor ? "default" : "outline"}
-            size="sm"
-            onClick={() => {
-              if (workspace.pendingTrendAnchor) {
-                clearPendingTrendLine(key);
-                return;
-              }
-
-              const anchorCandle = lastCandle;
-              if (!anchorCandle) {
-                return;
-              }
-
-              startTrendLine(key, {
-                time: anchorCandle.time,
-                price: anchorCandle.close,
-              });
-            }}
-          >
-            {workspace.pendingTrendAnchor ? "Cancel Trend" : "Trend Line"}
-          </Button>
+          {toolButtons}
           {workspace.lastViewedTimestamp ? (
             <div className="self-center text-xs text-muted-foreground">
               Focused candle:{" "}

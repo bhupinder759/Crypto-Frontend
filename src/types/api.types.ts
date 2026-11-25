@@ -42,6 +42,8 @@ export interface TradeDto {
   buyOrderId: string;
   sellOrderId: string;
   timestamp: string;
+  /** Taker side when the backend provides it. */
+  side?: "BUY" | "SELL";
 }
 
 export interface OrderBookDto {

@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { backendFetch } from "@/lib/api/backend";
 import { requireServerSession } from "@/lib/api/server-session";
 import { routes } from "@/lib/constants/routes";
-import { TradingWorkspace } from "@/modules/trading/components/trading-workspace";
+import { TradingTerminal } from "@/modules/trading/components/terminal/trading-terminal";
 
 const SYMBOL_PATTERN = /^[A-Z0-9]{2,12}-[A-Z0-9]{2,12}$/;
 
@@ -63,5 +63,5 @@ export default async function TradingSymbolPage({
     notFound();
   }
 
-  return <TradingWorkspace symbol={symbol} account={session.account} />;
+  return <TradingTerminal symbol={symbol} account={session.account} />;
 }

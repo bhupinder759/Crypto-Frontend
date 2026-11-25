@@ -1,5 +1,3 @@
-import type { OrderBookDto, TradeDto } from "@/types/api.types";
-
 export interface OrderFormInput {
   accountId: string;
   symbol: string;
@@ -22,9 +20,4 @@ export interface OrderDto {
   remaining: string;
   status: string;
   clientOrderId: string;
-}
-
-export interface TradingRealtimeState {
-  orderBook: OrderBookDto | null;
-  trades: TradeDto[];
 }
