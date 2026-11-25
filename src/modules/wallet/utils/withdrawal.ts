@@ -56,9 +56,9 @@ export function validateWithdrawal(input: {
   if (!amount) errors.amount = "Enter an amount";
   else if (!/^(0|[1-9]\d*)(\.\d{1,2})?$/.test(amount))
     errors.amount = "Use up to 2 decimals";
-  else if (Number(amount) < MIN_WITHDRAWAL)
+  else if (dec(amount).lt(MIN_WITHDRAWAL))
     errors.amount = `Minimum ${MIN_WITHDRAWAL} USD`;
-  else if (Number(amount) + input.network.fee > input.available + 1e-9)
+  else if (dec(amount).plus(input.network.fee).gt(dec(input.available)))
     errors.amount = "Amount plus fee exceeds available balance";
 
   const address = input.address.trim();
