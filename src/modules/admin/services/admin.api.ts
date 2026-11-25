@@ -23,7 +23,9 @@ export function getPendingWithdrawals(limit = 20) {
 }
 
 export function approveWithdrawal(id: string) {
-  return apiPost<AdminPendingWithdrawalDto>(`/admin/wallet/withdrawals/${id}/approve`);
+  return apiPost<AdminPendingWithdrawalDto>(
+    `/admin/wallet/withdrawals/${id}/approve`,
+  );
 }
 
 export function rejectWithdrawal(id: string, reason: string) {
