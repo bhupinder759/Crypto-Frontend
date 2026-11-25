@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 import {
   decimalsFromIncrement,
   formatFixed,
-  isMultipleOf,
 } from "@/lib/utils/precision";
 import type { AccountDto } from "@/modules/auth/types";
 import { ESTIMATED_TAKER_FEE_RATE } from "@/modules/trading/constants";
@@ -35,6 +34,7 @@ import {
   useLiveOrderBook,
 } from "@/modules/trading/hooks/use-trading";
 import { useTicketStore } from "@/modules/trading/store/ticket.store";
+import { validateTicket } from "@/modules/trading/utils/ticket-validation";
 import { useTradingStore } from "@/modules/trading/store/trading.store";
 import type { OrderFormInput } from "@/modules/trading/types";
 import {
@@ -296,22 +296,20 @@ export function TradeTicket({
     effectiveUnit === "QUOTE"
       ? floorToIncrement(calc.qty, qtyIncrement)
       : amount;
-  let amountError: string | null = null;
-  let priceError: string | null = null;
-  if (amount !== "" && instrument) {
-    if (!qtyString || Number(qtyString) <= 0) {
-      amountError = "Amount too small";
-    } else if (Number(qtyString) < Number(instrument.minQuantity)) {
-      amountError = `Min ${instrument.minQuantity} ${base}`;
-    } else if (!isMultipleOf(qtyString, instrument.quantityIncrement)) {
-      amountError = `Step ${instrument.quantityIncrement} ${base}`;
-    }
-  }
-  if (type === "LIMIT" && price !== "" && instrument) {
-    if (Number(price) <= 0) priceError = "Enter a price";
-    else if (!isMultipleOf(price, instrument.priceIncrement))
-      priceError = `Tick ${instrument.priceIncrement}`;
-  }
+  const { amountError, priceError } = validateTicket({
+    // Typed-but-empty amount (e.g. quote too small to buy one step) is still an error.
+    quantity: amount === "" ? "" : qtyString || "0",
+    price,
+    type,
+    rules: instrument
+      ? {
+          minQuantity: instrument.minQuantity,
+          quantityIncrement: instrument.quantityIncrement,
+          priceIncrement: instrument.priceIncrement,
+          baseAsset: base,
+        }
+      : null,
+  });
   const insufficientBalance =
     Boolean(account) &&
     spendRequired > 0 &&
