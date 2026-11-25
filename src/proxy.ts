@@ -6,6 +6,7 @@ import { routes } from "@/lib/constants/routes";
 const protectedPrefixes = [
   routes.dashboard,
   routes.trading,
+  routes.markets,
   routes.wallet,
   routes.orders,
   routes.settings,
@@ -43,6 +44,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/trading/:path*",
+    "/markets/:path*",
     "/wallet/:path*",
     "/orders/:path*",
     "/settings/:path*",

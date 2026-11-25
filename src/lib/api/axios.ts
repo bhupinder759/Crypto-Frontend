@@ -6,6 +6,7 @@ import axios from "axios";
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/trading",
+  "/markets",
   "/wallet",
   "/orders",
   "/settings",

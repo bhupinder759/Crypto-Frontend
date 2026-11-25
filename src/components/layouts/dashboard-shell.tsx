@@ -9,6 +9,7 @@ import { CommandPalette, CommandPaletteTrigger } from "./command-palette";
 import { ConnectionStatus } from "./connection-status";
 import { MobileBottomNav, MobileNavDrawer } from "./mobile-nav";
 import { NotificationsPopover } from "./notifications-popover";
+import { TickerTape } from "./ticker-tape";
 import { UserMenu } from "./user-menu";
 import { useUiStore } from "@/store/ui.store";
 
@@ -47,6 +48,7 @@ export function DashboardShell({
               <UserMenu session={session} />
             </div>
           </div>
+          <TickerTape />
         </header>
         <main className="flex-1 px-3 py-4 pb-20 lg:px-4 lg:pb-6">
           {children}

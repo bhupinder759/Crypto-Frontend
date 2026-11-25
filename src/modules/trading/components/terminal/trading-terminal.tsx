@@ -183,7 +183,7 @@ export function TradingTerminal({
     <div className="-mx-3 -my-4 flex flex-col lg:-mx-4">
       <SymbolBar symbol={symbol} priceDecimals={priceDecimals} />
       {isDesktop ? (
-        <div className="h-[calc(100svh-3rem-2.75rem)] min-h-[640px]">
+        <div className="h-[calc(100svh-3rem-2.75rem-1.75rem)] min-h-[640px]">
           <ResizablePanelGroup orientation="vertical">
             <ResizablePanel defaultSize="72%" minSize="45%">
               <ResizablePanelGroup orientation="horizontal">

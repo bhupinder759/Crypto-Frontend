@@ -1,6 +1,7 @@
 import {
   CandlestickChart,
   LayoutDashboard,
+  ChartNoAxesCombined,
   ListOrdered,
   Settings,
   ShieldCheck,
@@ -27,6 +28,12 @@ export const navItems: NavItem[] = [
     label: "Overview",
     icon: LayoutDashboard,
     primary: true,
+  },
+  {
+    href: routes.markets,
+    matcher: "/markets",
+    label: "Markets",
+    icon: ChartNoAxesCombined,
   },
   {
     href: `${routes.trading}/${DEFAULT_SYMBOL}`,

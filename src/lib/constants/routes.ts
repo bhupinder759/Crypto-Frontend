@@ -4,6 +4,7 @@ export const routes = {
   register: "/register",
   dashboard: "/dashboard",
   admin: "/admin",
+  markets: "/markets",
   trading: "/trading",
   wallet: "/wallet",
   orders: "/orders",

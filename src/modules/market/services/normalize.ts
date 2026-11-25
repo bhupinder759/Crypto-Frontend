@@ -2,7 +2,7 @@
  * Response-shape adapters. The backend is moving money to decimal strings and
  * may change shapes; keep all coercion here so components stay untouched.
  */
-import type { OrderBookDto, TradeDto } from "@/types/api.types";
+import type { OrderBookDto, TickerDto, TradeDto } from "@/types/api.types";
 
 type RawLevel =
   | [string | number, string | number]
@@ -68,4 +68,19 @@ export function normalizeTrade(raw: unknown): TradeDto | null {
 export function normalizeTrades(raw: unknown): TradeDto[] {
   if (!Array.isArray(raw)) return [];
   return raw.map(normalizeTrade).filter((t): t is TradeDto => t !== null);
+}
+
+export function normalizeTicker(raw: unknown, symbol: string): TickerDto | null {
+  if (!raw || typeof raw !== "object") return null;
+  const t = raw as Record<string, unknown>;
+  const last = t.lastPrice ?? t.last ?? t.price ?? t.close;
+  if (last == null) return null;
+  return {
+    symbol: String(t.symbol ?? symbol),
+    lastPrice: toDecimalString(last),
+    high24h: toDecimalString(t.high24h ?? t.high ?? last),
+    low24h: toDecimalString(t.low24h ?? t.low ?? last),
+    volume24h: toDecimalString(t.volume24h ?? t.volume ?? 0),
+    priceChange24h: toDecimalString(t.priceChange24h ?? t.priceChange ?? 0),
+  };
 }

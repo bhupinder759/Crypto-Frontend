@@ -3,6 +3,7 @@
 import { apiGet, apiPut } from "@/lib/api/api-client";
 import {
   normalizeOrderBook,
+  normalizeTicker,
   normalizeTrades,
 } from "@/modules/market/services/normalize";
 import type {
@@ -29,8 +30,8 @@ export function getInstruments(symbol?: string) {
   );
 }
 
-export function getTicker(symbol: string) {
-  return apiGet<TickerDto>("/market/ticker", { symbol });
+export async function getTicker(symbol: string): Promise<TickerDto | null> {
+  return normalizeTicker(await apiGet<unknown>("/market/ticker", { symbol }), symbol);
 }
 
 export async function getTrades(symbol: string, limit = 50): Promise<TradeDto[]> {
