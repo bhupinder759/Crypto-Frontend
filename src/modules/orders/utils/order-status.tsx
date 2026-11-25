@@ -7,6 +7,7 @@ export const OPEN_ORDER_STATUSES = new Set([
   "PENDING",
   "ACCEPTED",
   "PARTIAL",
+  "PARTIAL_FILL",
   "PARTIALLY_FILLED",
 ]);
 
@@ -22,6 +23,7 @@ const statusVariant: Record<string, BadgeVariant> = {
   PENDING: "info",
   ACCEPTED: "info",
   PARTIAL: "warning",
+  PARTIAL_FILL: "warning",
   PARTIALLY_FILLED: "warning",
   FILLED: "success",
   CANCELLED: "muted",
