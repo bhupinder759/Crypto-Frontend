@@ -54,18 +54,25 @@ const REASONS: Record<string, string> = {
 };
 
 function describeStatus(
-  order: Pick<OrderDto, "status" | "side" | "quantity" | "symbol" | "statusReason">,
+  order: Pick<
+    OrderDto,
+    "status" | "side" | "quantity" | "symbol" | "statusReason"
+  >,
 ) {
   const status = order.status.toUpperCase();
   const reason = order.statusReason ? REASONS[order.statusReason] : undefined;
   const label = `${order.side} ${order.quantity} ${order.symbol}${reason ? ` — ${reason}` : ""}`;
-  if (status === "FILLED") return { kind: "success" as const, text: `Filled: ${label}` };
+  if (status === "FILLED")
+    return { kind: "success" as const, text: `Filled: ${label}` };
   if (status.startsWith("PARTIAL"))
     return { kind: "success" as const, text: `Partially filled: ${label}` };
   if (status === "REJECTED" || status === "FAILED")
     return { kind: "error" as const, text: `Rejected: ${label}` };
   if (status === "CANCELLED" || status === "CANCELED" || status === "EXPIRED")
-    return { kind: "error" as const, text: `Not filled (${status.toLowerCase()}): ${label}` };
+    return {
+      kind: "error" as const,
+      text: `Not filled (${status.toLowerCase()}): ${label}`,
+    };
   return { kind: "info" as const, text: `Order placed: ${label}` };
 }
 
@@ -107,21 +114,40 @@ export function useCreateOrderMutation() {
       if (context) queryClient.setQueryData(context.key, context.previous);
       toast.error(error.message || "Order rejected");
     },
-    onSuccess: async (response) => {
-      try {
-        // Real accounts return the final status; demo needs a read-back.
-        const order = await getOrder(response.orderId);
+    onSuccess: async (response, payload) => {
+      const show = (order: Parameters<typeof describeStatus>[0]) => {
         const { kind, text } = describeStatus(order);
-        if (kind === "success") toast.success(text);
-        else if (kind === "error") toast.error(text);
-        else toast(text);
+        const opts = { id: `order-${response.orderId}` };
+        if (kind === "success") toast.success(text, opts);
+        else if (kind === "error") toast.error(text, opts);
+        else toast(text, opts);
+      };
+      // REAL accounts return the final status; demo needs a read-back.
+      if (response.status) {
+        show({
+          status: response.status,
+          side: payload.side,
+          symbol: payload.symbol,
+          quantity:
+            payload.quantity ??
+            `${payload.quoteOrderQty} ${payload.symbol.split("-")[1]} of`,
+          statusReason: null,
+        });
+        return;
+      }
+      try {
+        show(await getOrder(response.orderId));
       } catch {
-        toast.success("Order submitted");
+        toast.success("Order submitted", { id: `order-${response.orderId}` });
       }
     },
     onSettled: (_response, _error, payload) => {
-      void queryClient.invalidateQueries({ queryKey: ["orders", payload.accountId] });
-      void queryClient.invalidateQueries({ queryKey: ["orders", "history", payload.accountId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["orders", payload.accountId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["orders", "history", payload.accountId],
+      });
       void queryClient.invalidateQueries({
         queryKey: ["wallet", "portfolio", payload.accountId],
       });
@@ -136,8 +162,12 @@ export function useCancelOrderMutation() {
     onSuccess: () => toast.success("Order cancelled"),
     onError: (error) => toast.error(error.message || "Cancel failed"),
     onSettled: (_response, _error, payload) => {
-      void queryClient.invalidateQueries({ queryKey: ["orders", payload.accountId] });
-      void queryClient.invalidateQueries({ queryKey: ["orders", "history", payload.accountId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["orders", payload.accountId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["orders", "history", payload.accountId],
+      });
       void queryClient.invalidateQueries({
         queryKey: ["wallet", "portfolio", payload.accountId],
       });
@@ -157,7 +187,11 @@ export function useFeeSchedule(mode: "DEMO" | "REAL", accountId?: string) {
 }
 
 /** Own executions (REAL only); DEMO falls back to filled orders in the UI. */
-export function useFillsQuery(accountId: string | undefined, mode: "DEMO" | "REAL", symbol?: string) {
+export function useFillsQuery(
+  accountId: string | undefined,
+  mode: "DEMO" | "REAL",
+  symbol?: string,
+) {
   return useQuery({
     queryKey: ["orders", accountId, "fills", symbol ?? "all"],
     queryFn: () => getFills({ accountId: accountId!, symbol, limit: 50 }),
@@ -178,8 +212,12 @@ export function useFillNotifications(orders: OrderDto[] | undefined) {
       if (order.id.startsWith("pending-")) continue;
       next.set(order.id, order.filled);
       const before = previous?.get(order.id);
-      if (previous && before !== undefined && Number(order.filled) > Number(before)) {
-        toast.success(describeStatus(order).text);
+      if (
+        previous &&
+        before !== undefined &&
+        Number(order.filled) > Number(before)
+      ) {
+        toast.success(describeStatus(order).text, { id: `order-${order.id}` });
       }
     }
     seen.current = next;
@@ -221,7 +259,9 @@ export function useMarketStreams(symbol: string, interval: string) {
       }
     };
     const onTrades = (payload: unknown[]) => {
-      const trades = normalizeTrades(payload).filter((t) => !t.symbol || t.symbol === symbol);
+      const trades = normalizeTrades(payload).filter(
+        (t) => !t.symbol || t.symbol === symbol,
+      );
       // Server sends oldest → newest; the store keeps newest first.
       if (trades.length) prependTrades(symbol, trades.reverse());
     };
@@ -241,7 +281,13 @@ export function useMarketStreams(symbol: string, interval: string) {
       socket.off("ticker", onTicker);
       release();
     };
-  }, [mergeTickers, prependTrades, setExternalOrderBook, setInternalOrderBook, symbol]);
+  }, [
+    mergeTickers,
+    prependTrades,
+    setExternalOrderBook,
+    setInternalOrderBook,
+    symbol,
+  ]);
 }
 
 function hasLevels(book: OrderBookDto | null) {

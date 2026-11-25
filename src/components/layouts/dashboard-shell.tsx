@@ -12,6 +12,7 @@ import { NotificationsPopover } from "./notifications-popover";
 import { TickerTape } from "./ticker-tape";
 import { UserMenu } from "./user-menu";
 import { useUiStore } from "@/store/ui.store";
+import { useUserStream } from "@/modules/user-stream/use-user-stream";
 
 export function DashboardShell({
   session,
@@ -25,6 +26,9 @@ export function DashboardShell({
   useEffect(() => {
     void useUiStore.persist.rehydrate();
   }, []);
+
+  // Private stream: live orders, fills, balances and notifications.
+  useUserStream(true);
 
   return (
     <div className="flex min-h-svh bg-background">
