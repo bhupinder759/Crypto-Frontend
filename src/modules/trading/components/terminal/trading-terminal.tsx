@@ -238,16 +238,16 @@ export function TradingTerminal({
                 Trade
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="chart" className="h-[420px] bg-card">
+            <TabsContent value="chart" className="h-[420px] flex-none bg-card">
               {chart}
             </TabsContent>
-            <TabsContent value="book" className="h-[460px] bg-card">
+            <TabsContent value="book" className="h-[460px] flex-none bg-card">
               <OrderBook symbol={symbol} instrument={instrument} />
             </TabsContent>
-            <TabsContent value="trades" className="h-[460px] bg-card">
+            <TabsContent value="trades" className="h-[460px] flex-none bg-card">
               <RecentTrades symbol={symbol} instrument={instrument} />
             </TabsContent>
-            <TabsContent value="trade" className="bg-card">
+            <TabsContent value="trade" className="flex-none bg-card">
               {ticket}
             </TabsContent>
           </Tabs>

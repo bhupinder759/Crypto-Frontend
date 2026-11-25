@@ -752,7 +752,7 @@ export function LiveCandlestickChart({
             ) : null}
           </div>
         ) : null}
-        <div className="relative min-h-0 w-full flex-1">
+        <div className="relative min-h-0 w-full flex-1 overflow-hidden">
           <div ref={containerRef} className="absolute inset-0" />
           {chartCandles.length === 0 && (isLoading || isError) ? (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80">
