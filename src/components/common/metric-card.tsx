@@ -32,8 +32,8 @@ export function MetricCard({
         <CardContent
           className={cn(
             "flex items-center gap-2 text-sm",
-            isPositive && "text-emerald-500",
-            isNegative && "text-rose-500",
+            isPositive && "text-buy",
+            isNegative && "text-sell",
             !isPositive && !isNegative && "text-muted-foreground",
           )}
         >

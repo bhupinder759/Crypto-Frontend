@@ -1,12 +1,26 @@
 "use client";
 
 import { MetricCard } from "@/components/common/metric-card";
+import { QueryErrorCard } from "@/components/common/query-error-card";
 import { PageHeader } from "@/components/common/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAdminOverviewQuery, useAdminPendingWithdrawalsQuery, useAdminRecentUsersQuery, useApproveWithdrawalMutation, useRejectWithdrawalMutation } from "@/modules/admin/hooks/use-admin";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  useAdminOverviewQuery,
+  useAdminPendingWithdrawalsQuery,
+  useAdminRecentUsersQuery,
+  useApproveWithdrawalMutation,
+  useRejectWithdrawalMutation,
+} from "@/modules/admin/hooks/use-admin";
 import { formatNumber, formatTimestamp } from "@/lib/utils/formatter";
 
 export function AdminOverview() {
@@ -18,18 +32,41 @@ export function AdminOverview() {
   const overview = overviewQuery.data;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         eyebrow="Administration"
         title="Admin"
         description="Users, balances, order flow and withdrawal queue."
       />
+      {overviewQuery.isError ? (
+        <QueryErrorCard
+          compact
+          title="Couldn't load platform metrics"
+          error={overviewQuery.error}
+          onRetry={overviewQuery.refetch}
+        />
+      ) : null}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard title="Users" value={overview ? formatNumber(overview.users, 0) : "--"} />
-        <MetricCard title="Admins" value={overview ? formatNumber(overview.admins, 0) : "--"} />
-        <MetricCard title="Open Orders" value={overview ? formatNumber(overview.openOrders, 0) : "--"} />
-        <MetricCard title="Pending Withdrawals" value={overview ? formatNumber(overview.pendingWithdrawals, 0) : "--"} />
-        <MetricCard title="24h Volume" value={overview ? formatNumber(overview.volume24hQuote, 2) : "--"} />
+        <MetricCard
+          title="Users"
+          value={overview ? formatNumber(overview.users, 0) : "--"}
+        />
+        <MetricCard
+          title="Admins"
+          value={overview ? formatNumber(overview.admins, 0) : "--"}
+        />
+        <MetricCard
+          title="Open Orders"
+          value={overview ? formatNumber(overview.openOrders, 0) : "--"}
+        />
+        <MetricCard
+          title="Pending Withdrawals"
+          value={overview ? formatNumber(overview.pendingWithdrawals, 0) : "--"}
+        />
+        <MetricCard
+          title="24h Volume"
+          value={overview ? formatNumber(overview.volume24hQuote, 2) : "--"}
+        />
       </div>
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <Card>
@@ -37,58 +74,84 @@ export function AdminOverview() {
             <CardTitle>Pending Withdrawals</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead>Requested</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(withdrawalsQuery.data ?? []).map((withdrawal) => (
-                  <TableRow key={withdrawal.id}>
-                    <TableCell className="font-medium">{withdrawal.userId}</TableCell>
-                    <TableCell>{withdrawal.amount}</TableCell>
-                    <TableCell className="max-w-[220px] truncate">{withdrawal.address}</TableCell>
-                    <TableCell>{formatTimestamp(withdrawal.createdAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          disabled={approveMutation.isPending || rejectMutation.isPending}
-                          onClick={() => approveMutation.mutate(withdrawal.id)}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={approveMutation.isPending || rejectMutation.isPending}
-                          onClick={() =>
-                            rejectMutation.mutate({
-                              id: withdrawal.id,
-                              reason: "Rejected by admin operator",
-                            })
-                          }
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(withdrawalsQuery.data ?? []).length === 0 ? (
+            {withdrawalsQuery.isError ? (
+              <QueryErrorCard
+                compact
+                title="Couldn't load withdrawals"
+                error={withdrawalsQuery.error}
+                onRetry={withdrawalsQuery.refetch}
+              />
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No pending withdrawals
-                    </TableCell>
+                    <TableHead>User</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead>Requested</TableHead>
+                    <TableHead />
                   </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {(withdrawalsQuery.data ?? []).map((withdrawal) => (
+                    <TableRow key={withdrawal.id}>
+                      <TableCell className="font-medium">
+                        {withdrawal.userId}
+                      </TableCell>
+                      <TableCell>{withdrawal.amount}</TableCell>
+                      <TableCell className="max-w-[220px] truncate">
+                        {withdrawal.address}
+                      </TableCell>
+                      <TableCell>
+                        {formatTimestamp(withdrawal.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            disabled={
+                              approveMutation.isPending ||
+                              rejectMutation.isPending
+                            }
+                            onClick={() =>
+                              approveMutation.mutate(withdrawal.id)
+                            }
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={
+                              approveMutation.isPending ||
+                              rejectMutation.isPending
+                            }
+                            onClick={() =>
+                              rejectMutation.mutate({
+                                id: withdrawal.id,
+                                reason: "Rejected by admin operator",
+                              })
+                            }
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(withdrawalsQuery.data ?? []).length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-muted-foreground"
+                      >
+                        No pending withdrawals
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -96,10 +159,18 @@ export function AdminOverview() {
             <CardTitle>Recent Users</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {usersQuery.isError ? (
+              <QueryErrorCard
+                compact
+                title="Couldn't load users"
+                error={usersQuery.error}
+                onRetry={usersQuery.refetch}
+              />
+            ) : null}
             {(usersQuery.data ?? []).map((user) => (
               <div
                 key={user.id}
-                className="rounded-xl border border-border/60 p-4"
+                className="rounded-md border border-border p-3"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>

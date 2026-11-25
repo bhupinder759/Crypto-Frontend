@@ -3,24 +3,45 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/common/empty-state";
 import { formatNumber } from "@/lib/utils/formatter";
+import { QueryErrorCard } from "@/components/common/query-error-card";
+import {
+  OrderSide,
+  OrderStatusBadge,
+  isOpenOrder,
+} from "@/modules/orders/utils/order-status";
 import type { OrderDto } from "@/modules/trading/types";
 
 export function OpenOrdersCard({
   orders,
   onCancel,
   cancelling,
+  error,
+  onRetry,
+  priceDecimals = 2,
 }: {
   orders: OrderDto[];
   onCancel: (order: OrderDto) => void;
   cancelling?: boolean;
+  error?: unknown;
+  onRetry?: () => unknown;
+  priceDecimals?: number;
 }) {
+  const openOrders = orders.filter(isOpenOrder);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Open Orders</CardTitle>
       </CardHeader>
       <CardContent>
-        {orders.length === 0 ? (
+        {error ? (
+          <QueryErrorCard
+            compact
+            title="Couldn't load open orders"
+            error={error}
+            onRetry={onRetry}
+          />
+        ) : openOrders.length === 0 ? (
           <EmptyState
             title="No active orders"
             description="Your live limit orders will appear here."
@@ -32,17 +53,27 @@ export function OpenOrdersCard({
                 <TableHead>Side</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Qty</TableHead>
+                <TableHead>Filled</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
+              {openOrders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell>{order.side}</TableCell>
-                  <TableCell>{formatNumber(order.price ?? 0, 2)}</TableCell>
-                  <TableCell>{formatNumber(order.quantity, 4)}</TableCell>
-                  <TableCell>{order.status}</TableCell>
+                  <TableCell>
+                    <OrderSide side={order.side} />
+                  </TableCell>
+                  <TableCell>
+                    {order.price == null
+                      ? "Market"
+                      : formatNumber(order.price, priceDecimals)}
+                  </TableCell>
+                  <TableCell>{formatNumber(order.quantity, 8)}</TableCell>
+                  <TableCell>{formatNumber(order.filled, 8)}</TableCell>
+                  <TableCell>
+                    <OrderStatusBadge status={order.status} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="outline"

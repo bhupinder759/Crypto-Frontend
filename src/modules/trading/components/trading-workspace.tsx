@@ -28,6 +28,7 @@ import { useTradingStore } from "@/modules/trading/store/trading.store";
 import type { AccountDto } from "@/modules/auth/types";
 import type { MarketData } from "@/modules/market/types/market-data";
 import type { OrderBookDto, TickerDto } from "@/types/api.types";
+import { decimalsFromIncrement } from "@/lib/utils/precision";
 
 export function TradingWorkspace({
   symbol,
@@ -170,6 +171,9 @@ export function TradingWorkspace({
           />
           <OpenOrdersCard
             orders={openOrdersQuery.data ?? []}
+            error={openOrdersQuery.isError ? openOrdersQuery.error : undefined}
+            onRetry={openOrdersQuery.refetch}
+            priceDecimals={decimalsFromIncrement(instrument?.priceIncrement)}
             cancelling={cancelMutation.isPending}
             onCancel={(order) =>
               cancelMutation.mutate({

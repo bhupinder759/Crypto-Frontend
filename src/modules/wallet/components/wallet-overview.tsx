@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/common/page-header";
+import { QueryErrorCard } from "@/components/common/query-error-card";
 import { DemoFaucetCard } from "@/modules/wallet/components/demo-faucet-card";
 import { DepositForm } from "@/modules/wallet/components/deposit-form";
 import { WalletBalanceList } from "@/modules/wallet/components/wallet-balance-list";
@@ -24,7 +25,7 @@ export function WalletOverview({
   const withdrawalsQuery = useWithdrawalsQuery(mode === "REAL");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         eyebrow="Custody"
         title="Wallet"
@@ -34,7 +35,16 @@ export function WalletOverview({
             : "Balances, deposits and withdrawals."
         }
       />
-      <WalletBalanceList balances={portfolioQuery.data ?? []} />
+      {portfolioQuery.isError ? (
+        <QueryErrorCard
+          title="Couldn't load balances"
+          error={portfolioQuery.error}
+          onRetry={portfolioQuery.refetch}
+          retrying={portfolioQuery.isFetching}
+        />
+      ) : (
+        <WalletBalanceList balances={portfolioQuery.data ?? []} />
+      )}
       <div className="grid gap-6 xl:grid-cols-2">
         {mode === "DEMO" ? (
           <DemoFaucetCard />
@@ -45,7 +55,16 @@ export function WalletOverview({
           </>
         )}
       </div>
-      {mode === "REAL" ? (
+      {mode === "REAL" && (depositsQuery.isError || withdrawalsQuery.isError) ? (
+        <QueryErrorCard
+          title="Couldn't load wallet history"
+          error={depositsQuery.error ?? withdrawalsQuery.error}
+          onRetry={() => {
+            void depositsQuery.refetch();
+            void withdrawalsQuery.refetch();
+          }}
+        />
+      ) : mode === "REAL" ? (
         <WalletHistory
           deposits={depositsQuery.data ?? []}
           withdrawals={withdrawalsQuery.data ?? []}
