@@ -32,6 +32,11 @@
   --color-sell-foreground: var(--sell-foreground);
   --color-warning: var(--warning);
   --color-sidebar: var(--sidebar);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 2px);
@@ -66,6 +71,11 @@
   --sell-foreground: oklch(0.99 0 0);
   --warning: oklch(0.75 0.16 75);
   --sidebar: oklch(0.975 0.003 250);
+  --chart-1: oklch(0.72 0.15 75);
+  --chart-2: oklch(0.6 0.15 250);
+  --chart-3: oklch(0.62 0.16 155);
+  --chart-4: oklch(0.6 0.2 320);
+  --chart-5: oklch(0.65 0.12 200);
   --radius: 0.375rem;
 }
 
@@ -95,6 +105,11 @@
   --sell-foreground: oklch(0.98 0 0);
   --warning: oklch(0.8 0.15 80);
   --sidebar: oklch(0.17 0.008 260);
+  --chart-1: oklch(0.8 0.15 80);
+  --chart-2: oklch(0.68 0.15 250);
+  --chart-3: oklch(0.72 0.16 160);
+  --chart-4: oklch(0.68 0.19 320);
+  --chart-5: oklch(0.74 0.11 200);
 }
 
 @layer base {
