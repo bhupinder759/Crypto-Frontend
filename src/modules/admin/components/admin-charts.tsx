@@ -78,7 +78,10 @@ export function UserGrowthChart({
                 />
               }
             />
+            <YAxis yAxisId="total" hide />
+            <YAxis yAxisId="signups" hide orientation="right" />
             <Area
+              yAxisId="total"
               dataKey="total"
               type="monotone"
               stroke="var(--color-total)"
