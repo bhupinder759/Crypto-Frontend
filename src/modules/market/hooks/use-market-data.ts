@@ -93,11 +93,15 @@ export function useOrderBookQuery(symbol: string) {
   });
 }
 
-export function useChartPreferenceQuery(symbol: string, interval: string) {
+export function useChartPreferenceQuery(
+  symbol: string,
+  interval: string,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["market", "chart-preference", symbol, interval],
     queryFn: () => getChartPreference(symbol, interval),
-    enabled: Boolean(symbol && interval),
+    enabled: enabled && Boolean(symbol && interval),
     staleTime: 60_000,
   });
 }

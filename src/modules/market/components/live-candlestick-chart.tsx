@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import {
   CandlestickSeries,
   ColorType,
@@ -12,11 +13,18 @@ import {
   type MouseEventParams,
   type Time,
 } from "lightweight-charts";
+import { QueryErrorCard } from "@/components/common/query-error-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  decimalsFromIncrement,
+  decimalsFromPrice,
+  formatFixed,
+} from "@/lib/utils/precision";
+import {
   useChartPreferenceQuery,
   useInfiniteCandlesQuery,
+  useInstrumentQuery,
   useUpdateChartPreferenceMutation,
 } from "@/modules/market/hooks/use-market-data";
 import { useMarketSocket } from "@/modules/market/hooks/use-market-socket";
@@ -30,6 +38,7 @@ import type {
   ChartIndicatorConfig,
 } from "@/modules/market/types/chart-workspace";
 import type { MarketData } from "@/modules/market/types/market-data";
+import { readChartPalette } from "@/modules/market/utils/chart-theme";
 
 type CandlestickPoint = {
   time: Time;
@@ -166,12 +175,17 @@ export function LiveCandlestickChart({
   title = "Price Action",
   height = 420,
   onLiveCandle,
+  persistPreferences = true,
+  showTools = true,
 }: {
   symbol: string;
   interval: string;
   title?: string;
   height?: number;
   onLiveCandle?: (candle: MarketData) => void;
+  /** Sync focus/indicators/drawings to the user's saved preferences (needs auth). */
+  persistPreferences?: boolean;
+  showTools?: boolean;
 }) {
   const key = getChartWorkspaceKey(symbol, interval);
   const { socketRef, isConnected } = useMarketSocket(symbol, interval);
@@ -215,10 +229,24 @@ export function LiveCandlestickChart({
     (state) => state.clearPendingTrendLine,
   );
 
-  const preferenceQuery = useChartPreferenceQuery(symbol, interval);
+  const { resolvedTheme } = useTheme();
+  const instrumentQuery = useInstrumentQuery(symbol);
+  const preferenceQuery = useChartPreferenceQuery(
+    symbol,
+    interval,
+    persistPreferences,
+  );
   const updatePreferenceMutation = useUpdateChartPreferenceMutation();
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
-    useInfiniteCandlesQuery(symbol, interval);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteCandlesQuery(symbol, interval);
 
   const candles = useMemo(
     () => dedupeCandles(data?.pages.flatMap((page) => page.items) ?? []),
@@ -230,6 +258,9 @@ export function LiveCandlestickChart({
   );
   const lastCandle = chartCandles[chartCandles.length - 1] ?? null;
   const currentPrice = lastCandle?.close ?? null;
+  const priceDecimals = instrumentQuery.data?.priceIncrement
+    ? decimalsFromIncrement(instrumentQuery.data.priceIncrement)
+    : decimalsFromPrice(currentPrice);
 
   useEffect(() => {
     hasNextPageRef.current = Boolean(hasNextPage);
@@ -262,36 +293,38 @@ export function LiveCandlestickChart({
       return;
     }
 
+    const palette = readChartPalette();
     const chart = createChart(container, {
       autoSize: true,
       height,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "#94a3b8",
+        textColor: palette.text,
+        fontSize: 11,
       },
       grid: {
-        vertLines: { color: "rgba(148, 163, 184, 0.08)" },
-        horzLines: { color: "rgba(148, 163, 184, 0.08)" },
+        vertLines: { color: palette.grid },
+        horzLines: { color: palette.grid },
       },
       crosshair: {
-        vertLine: { color: "rgba(56, 189, 248, 0.35)" },
-        horzLine: { color: "rgba(56, 189, 248, 0.35)" },
+        vertLine: { color: palette.crosshair },
+        horzLine: { color: palette.crosshair },
       },
       rightPriceScale: {
-        borderColor: "rgba(148, 163, 184, 0.18)",
+        borderColor: palette.border,
       },
       timeScale: {
-        borderColor: "rgba(148, 163, 184, 0.18)",
+        borderColor: palette.border,
         timeVisible: true,
         secondsVisible: false,
       },
     });
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#10b981",
-      downColor: "#ef4444",
-      wickUpColor: "#10b981",
-      wickDownColor: "#ef4444",
+      upColor: palette.up,
+      downColor: palette.down,
+      wickUpColor: palette.up,
+      wickDownColor: palette.down,
       borderVisible: false,
       priceLineVisible: true,
       lastValueVisible: true,
@@ -365,6 +398,46 @@ export function LiveCandlestickChart({
     setLastViewedTimestamp,
     symbol,
   ]);
+
+  // Re-read CSS variables whenever the theme flips.
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const chart = chartRef.current;
+      const series = seriesRef.current;
+      if (!chart || !series) return;
+      const palette = readChartPalette();
+      chart.applyOptions({
+        layout: { textColor: palette.text },
+        grid: {
+          vertLines: { color: palette.grid },
+          horzLines: { color: palette.grid },
+        },
+        crosshair: {
+          vertLine: { color: palette.crosshair },
+          horzLine: { color: palette.crosshair },
+        },
+        rightPriceScale: { borderColor: palette.border },
+        timeScale: { borderColor: palette.border },
+      });
+      series.applyOptions({
+        upColor: palette.up,
+        downColor: palette.down,
+        wickUpColor: palette.up,
+        wickDownColor: palette.down,
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [resolvedTheme]);
+
+  useEffect(() => {
+    seriesRef.current?.applyOptions({
+      priceFormat: {
+        type: "price",
+        precision: priceDecimals,
+        minMove: 1 / 10 ** priceDecimals,
+      },
+    });
+  }, [priceDecimals]);
 
   useEffect(() => {
     if (!seriesRef.current) {
@@ -459,7 +532,11 @@ export function LiveCandlestickChart({
   }, [workspace.drawingConfig]);
 
   useEffect(() => {
-    if (!workspace.hydrated || workspace.lastViewedTimestamp == null) {
+    if (
+      !persistPreferences ||
+      !workspace.hydrated ||
+      workspace.lastViewedTimestamp == null
+    ) {
       return;
     }
 
@@ -482,13 +559,14 @@ export function LiveCandlestickChart({
   }, [
     interval,
     symbol,
+    persistPreferences,
     updatePreferenceMutation,
     workspace.hydrated,
     workspace.lastViewedTimestamp,
   ]);
 
   useEffect(() => {
-    if (!workspace.hydrated) {
+    if (!persistPreferences || !workspace.hydrated) {
       return;
     }
 
@@ -517,6 +595,7 @@ export function LiveCandlestickChart({
   }, [
     interval,
     symbol,
+    persistPreferences,
     updatePreferenceMutation,
     workspace.drawingConfig,
     workspace.hydrated,
@@ -598,15 +677,15 @@ export function LiveCandlestickChart({
             </p>
           </div>
           <div className="text-right">
-            <div className="text-sm font-medium text-foreground">
-              {lastCandle ? lastCandle.close.toFixed(4) : "--"}
+            <div className="text-sm font-medium text-foreground tabular">
+              {lastCandle ? formatFixed(lastCandle.close, priceDecimals) : "--"}
             </div>
             <div className="text-xs text-muted-foreground">
-              {isConnected ? "Socket connected" : "Socket reconnecting"}
+              {isConnected ? "Live" : "Reconnecting…"}
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className={showTools ? "flex flex-wrap gap-2" : "hidden"}>
           <Button
             type="button"
             variant={
@@ -678,13 +757,25 @@ export function LiveCandlestickChart({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {isLoading && chartCandles.length === 0 ? (
-          <div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">
-            Loading market history...
-          </div>
-        ) : (
-          <div ref={containerRef} style={{ height }} className="w-full" />
-        )}
+        <div className="relative w-full" style={{ height }}>
+          <div ref={containerRef} className="absolute inset-0" />
+          {chartCandles.length === 0 && (isLoading || isError) ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80">
+              {isError ? (
+                <QueryErrorCard
+                  compact
+                  title="Market history unavailable"
+                  error={error}
+                  onRetry={refetch}
+                />
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Loading market history…
+                </span>
+              )}
+            </div>
+          ) : null}
+        </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {workspace.pendingTrendAnchor
