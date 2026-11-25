@@ -776,7 +776,13 @@ export function LiveCandlestickChart({
             </div>
           ) : null}
         </div>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div
+          className={
+            showTools
+              ? "flex items-center justify-between text-xs text-muted-foreground"
+              : "hidden"
+          }
+        >
           <span>
             {workspace.pendingTrendAnchor
               ? "Trend mode active. Click a second candle to place the line."
