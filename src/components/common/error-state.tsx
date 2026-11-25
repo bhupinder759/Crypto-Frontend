@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, Home, RotateCw } from "lucide-react";
+import type { Route } from "next";
 import { Button } from "@/components/ui/button";
 
 export function ErrorState({
@@ -40,7 +41,7 @@ export function ErrorState({
           Try again
         </Button>
         <Button variant="outline" asChild>
-          <Link href={homeHref}>
+          <Link href={homeHref as Route}>
             <Home className="size-4" />
             Home
           </Link>

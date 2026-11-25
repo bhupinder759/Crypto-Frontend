@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { cn } from "@/lib/utils";
 
 export function AppLogo({
@@ -12,7 +13,7 @@ export function AppLogo({
 }) {
   return (
     <Link
-      href={href}
+      href={href as Route}
       aria-label="Nexfin home"
       className={cn("flex items-center gap-2 font-heading", className)}
     >
