@@ -62,14 +62,14 @@ export function MarketCalculatorCard({
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            className={`rounded-lg border px-3 py-2 text-sm ${side === "LONG" ? "border-emerald-500 bg-emerald-500/10 text-emerald-500" : "border-border"}`}
+            className={`rounded-lg border px-3 py-2 text-sm ${side === "LONG" ? "border-buy bg-buy/10 text-buy" : "border-border"}`}
             onClick={() => setSide("LONG")}
           >
             Long
           </button>
           <button
             type="button"
-            className={`rounded-lg border px-3 py-2 text-sm ${side === "SHORT" ? "border-rose-500 bg-rose-500/10 text-rose-500" : "border-border"}`}
+            className={`rounded-lg border px-3 py-2 text-sm ${side === "SHORT" ? "border-sell bg-sell/10 text-sell" : "border-border"}`}
             onClick={() => setSide("SHORT")}
           >
             Short
@@ -134,7 +134,7 @@ export function MarketCalculatorCard({
               Unrealized PnL
             </p>
             <p
-              className={`mt-2 text-lg font-medium ${calculations.unrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+              className={`mt-2 text-lg font-medium ${calculations.unrealizedPnl >= 0 ? "text-buy" : "text-sell"}`}
             >
               {formatNumber(calculations.unrealizedPnl, 2)}{" "}
               {instrument?.quoteAsset ?? "USD"}

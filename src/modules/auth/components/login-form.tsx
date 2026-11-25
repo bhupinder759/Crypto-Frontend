@@ -47,12 +47,12 @@ export function LoginForm({ next = null }: { next?: string | null }) {
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" {...form.register("email")} />
-        <p className="text-xs text-rose-500">{form.formState.errors.email?.message}</p>
+        <p className="text-xs text-destructive">{form.formState.errors.email?.message}</p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
         <Input id="password" type="password" {...form.register("password")} />
-        <p className="text-xs text-rose-500">
+        <p className="text-xs text-destructive">
           {form.formState.errors.password?.message}
         </p>
       </div>
@@ -60,7 +60,7 @@ export function LoginForm({ next = null }: { next?: string | null }) {
         {mutation.isPending ? "Signing in..." : "Sign in"}
       </Button>
       {form.formState.errors.root?.message ? (
-        <p className="text-sm text-rose-500">{form.formState.errors.root.message}</p>
+        <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
       ) : null}
       <p className="text-sm text-muted-foreground">
         No account yet?{" "}

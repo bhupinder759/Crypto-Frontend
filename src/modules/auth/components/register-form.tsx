@@ -47,7 +47,7 @@ export function RegisterForm() {
       <div className="space-y-2">
         <Label htmlFor="register-email">Email</Label>
         <Input id="register-email" type="email" {...form.register("email")} />
-        <p className="text-xs text-rose-500">{form.formState.errors.email?.message}</p>
+        <p className="text-xs text-destructive">{form.formState.errors.email?.message}</p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="register-password">Password</Label>
@@ -56,14 +56,14 @@ export function RegisterForm() {
           type="password"
           {...form.register("password")}
         />
-        <p className="text-xs text-rose-500">
+        <p className="text-xs text-destructive">
           {form.formState.errors.password?.message}
         </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="country">Country</Label>
         <Input id="country" maxLength={2} {...form.register("country")} />
-        <p className="text-xs text-rose-500">
+        <p className="text-xs text-destructive">
           {form.formState.errors.country?.message}
         </p>
       </div>
@@ -71,7 +71,7 @@ export function RegisterForm() {
         {mutation.isPending ? "Creating account..." : "Create account"}
       </Button>
       {form.formState.errors.root?.message ? (
-        <p className="text-sm text-rose-500">{form.formState.errors.root.message}</p>
+        <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
       ) : null}
       <p className="text-sm text-muted-foreground">
         Already registered?{" "}

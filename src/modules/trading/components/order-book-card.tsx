@@ -47,12 +47,12 @@ const OrderBookRows = memo(function OrderBookRows({
           className="relative overflow-hidden rounded-md px-2 py-1.5 text-sm"
         >
           <div
-            className={`absolute inset-y-0 ${side === "bid" ? "right-0 bg-emerald-500/12" : "left-0 bg-rose-500/12"}`}
+            className={`absolute inset-y-0 ${side === "bid" ? "right-0 bg-buy/10" : "left-0 bg-sell/10"}`}
             style={{ width: `${Math.min(row.widthPercent, 100)}%` }}
           />
           <div className="relative grid grid-cols-[1fr_1fr_auto] items-center gap-2">
             <span
-              className={side === "bid" ? "text-emerald-500" : "text-rose-500"}
+              className={side === "bid" ? "text-buy" : "text-sell"}
             >
               {formatNumber(row.price, 2)}
             </span>
