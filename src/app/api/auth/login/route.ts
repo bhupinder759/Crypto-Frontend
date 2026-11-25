@@ -3,10 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { backendFetch } from "@/lib/api/backend";
 import { loadSessionPayload } from "@/lib/api/load-session-payload";
 import { handleRouteError } from "@/lib/api/route-response";
-import {
-  AUTH_COOKIE_NAME,
-  TRADING_MODE_COOKIE_NAME,
-} from "@/lib/constants/config";
+import { applyTokenCookies, type TokenSet } from "@/lib/api/session-tokens";
+import { TRADING_MODE_COOKIE_NAME } from "@/lib/constants/config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,22 +12,14 @@ export async function POST(request: NextRequest) {
       email: string;
       password: string;
     };
-    const { accessToken } = await backendFetch<{ accessToken: string }>(
-      "/api/v1/auth/login",
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-      },
-    );
+    const tokens = await backendFetch<TokenSet>("/api/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const { accessToken } = tokens;
 
     const cookieStore = await cookies();
-    cookieStore.set(AUTH_COOKIE_NAME, accessToken, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24,
-    });
+    applyTokenCookies((name, value, opts) => cookieStore.set(name, value, opts), tokens);
 
     const session = await loadSessionPayload(accessToken);
     cookieStore.set(TRADING_MODE_COOKIE_NAME, session.tradingMode, {
