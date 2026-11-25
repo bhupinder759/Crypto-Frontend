@@ -35,7 +35,7 @@ export function useOpenOrdersQuery(accountId?: string, symbol?: string) {
     queryKey: ordersKey(accountId, symbol),
     queryFn: () => getOrders({ accountId: accountId!, symbol, limit: 50 }),
     enabled: Boolean(accountId),
-    refetchInterval: 8_000,
+    refetchInterval: 15_000,
   });
 }
 
@@ -157,7 +157,7 @@ export function useFillsQuery(accountId: string | undefined, mode: "DEMO" | "REA
     queryKey: ["orders", accountId, "fills", symbol ?? "all"],
     queryFn: () => getFills({ accountId: accountId!, symbol, limit: 50 }),
     enabled: mode === "REAL" && Boolean(accountId),
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
   });
 }
 

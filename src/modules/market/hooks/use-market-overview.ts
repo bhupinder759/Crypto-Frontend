@@ -21,13 +21,13 @@ export const sparklineQuery = (symbol: string) => ({
   queryFn: async () =>
     (await getCandlesPage(symbol, SPARKLINE_INTERVAL, SPARKLINE_POINTS)).items,
   staleTime: 5 * 60_000,
-  refetchInterval: 5 * 60_000,
+  refetchInterval: 10 * 60_000,
 });
 
 export const tickerQuery = (symbol: string) => ({
   queryKey: ["market", "ticker", symbol] as const,
   queryFn: () => getTicker(symbol),
-  refetchInterval: 15_000,
+  refetchInterval: 60_000,
 });
 
 /**

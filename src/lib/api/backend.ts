@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers as requestHeaders } from "next/headers";
 import { env } from "@/config/env";
 import {
   AUTH_COOKIE_NAME,
@@ -37,6 +37,15 @@ export async function backendFetch<T>(
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  // Pass the end-user IP so backend rate limits apply per client, not per BFF.
+  try {
+    const incoming = await requestHeaders();
+    const forwardedFor = incoming.get("x-forwarded-for") ?? incoming.get("x-real-ip");
+    if (forwardedFor) headers.set("X-Forwarded-For", forwardedFor);
+  } catch {
+    // Outside a request scope (e.g. build): nothing to forward.
   }
 
   if (tradingMode === "DEMO" || tradingMode === "REAL") {

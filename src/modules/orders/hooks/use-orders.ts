@@ -8,6 +8,6 @@ export function useOrdersHistoryQuery(accountId?: string) {
     queryKey: ["orders", "history", accountId],
     queryFn: () => getOrderHistory({ accountId: accountId!, limit: 100 }),
     enabled: Boolean(accountId),
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }

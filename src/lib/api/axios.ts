@@ -58,13 +58,12 @@ api.interceptors.response.use(
       window.location.href = `/login?next=${encodeURIComponent(next)}`;
     }
 
-    return Promise.reject(
-      new ApiError(
-        error.response?.data?.message ??
+    const message =
+      status === 429
+        ? "Too many requests — slowing down and retrying shortly."
+        : (error.response?.data?.message ??
           error.message ??
-          "Unexpected request failure",
-        status,
-      ),
-    );
+          "Unexpected request failure");
+    return Promise.reject(new ApiError(message, status));
   },
 );

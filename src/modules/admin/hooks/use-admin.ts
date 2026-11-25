@@ -14,7 +14,7 @@ export function useAdminOverviewQuery() {
   return useQuery({
     queryKey: ["admin", "overview"],
     queryFn: getAdminOverview,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -31,7 +31,7 @@ export function useAdminPendingWithdrawalsQuery(limit = 20) {
   return useQuery({
     queryKey: ["admin", "withdrawals", "pending", limit],
     queryFn: () => getPendingWithdrawals(limit),
-    refetchInterval: 10_000,
+    refetchInterval: 20_000,
   });
 }
 

@@ -215,9 +215,12 @@ export function TradeTicket({
 
   const bestBid = book?.bids[0]?.[0];
   const bestAsk = book?.asks[0]?.[0];
+  const seedSource = (side === "BUY" ? bestAsk : bestBid) ?? lastClose;
+  // Book levels arrive as "57776.13000000": normalise to the instrument tick.
   const seedPrice =
-    (side === "BUY" ? bestAsk : bestBid) ??
-    (lastClose != null ? lastClose.toFixed(priceDecimals) : undefined);
+    seedSource != null && dec(seedSource).gt(0)
+      ? dec(seedSource).toFixed(priceDecimals, 1 /* ROUND_DOWN */)
+      : undefined;
 
   // Adjust state during render (no effects): order-book clicks and seeding.
   const [seenNonce, setSeenNonce] = useState(picked?.nonce ?? 0);

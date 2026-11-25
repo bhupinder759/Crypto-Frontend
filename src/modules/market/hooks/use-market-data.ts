@@ -34,7 +34,7 @@ export function useTickerQuery(symbol: string) {
     queryKey: ["market", "ticker", symbol],
     queryFn: () => getTicker(symbol),
     enabled: Boolean(symbol),
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -55,7 +55,7 @@ export function useTradesQuery(symbol: string) {
     queryKey: ["market", "trades", symbol],
     queryFn: () => getTrades(symbol),
     enabled: Boolean(symbol),
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -77,7 +77,7 @@ export function useOrderBookQuery(symbol: string) {
     queryKey: ["market", "orderbook", symbol],
     queryFn: () => getOrderBook(symbol),
     enabled: Boolean(symbol),
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
   });
 }
 
