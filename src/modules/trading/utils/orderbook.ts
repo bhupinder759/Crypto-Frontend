@@ -1,3 +1,4 @@
+import { floorToStep } from "@/lib/utils/decimal";
 import { decimalsFromIncrement } from "@/lib/utils/precision";
 
 export type BookLevel = {
@@ -125,12 +126,7 @@ export function estimateFillByQuote(
   };
 }
 
-/** Floors `value` to a multiple of `increment`, returned as a fixed string. */
-export function floorToIncrement(value: number, increment: string): string {
-  const inc = Number(increment);
-  const decimals = decimalsFromIncrement(increment, 8);
-  if (!Number.isFinite(value) || value <= 0) return "";
-  if (!(inc > 0)) return value.toFixed(decimals);
-  const floored = Math.floor(value / inc + 1e-9) * inc;
-  return floored > 0 ? floored.toFixed(decimals) : "";
+/** Floors `value` to a multiple of `increment` (exact decimal), returned as a fixed string. */
+export function floorToIncrement(value: number | string, increment: string): string {
+  return floorToStep(value, increment);
 }

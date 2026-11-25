@@ -15,6 +15,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
@@ -23,20 +30,23 @@ import {
 } from "@/components/ui/tooltip";
 import { routes } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils";
-import {
-  decimalsFromIncrement,
-  formatFixed,
-} from "@/lib/utils/precision";
+import { bpsToRate, dec, isDecimalString } from "@/lib/utils/decimal";
+import { decimalsFromIncrement, formatFixed } from "@/lib/utils/precision";
 import type { AccountDto } from "@/modules/auth/types";
-import { ESTIMATED_TAKER_FEE_RATE } from "@/modules/trading/constants";
+import {
+  DEFAULT_MAKER_FEE_BPS,
+  DEFAULT_TAKER_FEE_BPS,
+  SUPPORTS_TIME_IN_FORCE,
+} from "@/modules/trading/constants";
 import {
   useCreateOrderMutation,
+  useFeeSchedule,
   useLiveOrderBook,
 } from "@/modules/trading/hooks/use-trading";
 import { useTicketStore } from "@/modules/trading/store/ticket.store";
 import { validateTicket } from "@/modules/trading/utils/ticket-validation";
 import { useTradingStore } from "@/modules/trading/store/trading.store";
-import type { OrderFormInput } from "@/modules/trading/types";
+import type { OrderFormInput, TimeInForce } from "@/modules/trading/types";
 import {
   estimateFillByBase,
   estimateFillByQuote,
@@ -181,6 +191,8 @@ export function TradeTicket({
   const [percent, setPercent] = useState(0);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, setPending] = useState<OrderFormInput | null>(null);
+  const [tif, setTif] = useState<TimeInForce>("GTC");
+  const [postOnly, setPostOnly] = useState(false);
 
   const book = useLiveOrderBook(symbol);
   const lastClose = useTradingStore(
@@ -222,49 +234,64 @@ export function TradeTicket({
   const balances = portfolioQuery.data;
   const available = useMemo(() => {
     const find = (asset: string) =>
-      Number(balances?.find((b) => b.asset === asset)?.available ?? 0);
+      dec(balances?.find((b) => b.asset === asset)?.available);
     return { base: find(base), quote: find(quote) };
   }, [balances, base, quote]);
+
+  const isReal = account?.mode === "REAL";
+  const feeQuery = useFeeSchedule(isReal ? "REAL" : "DEMO", account?.id);
+  const tifEnabled = SUPPORTS_TIME_IN_FORCE && isReal && type === "LIMIT";
+  const makerOnly = tifEnabled && postOnly;
+  const feeBps = isReal
+    ? makerOnly
+      ? (feeQuery.data?.makerFeeBps ?? DEFAULT_MAKER_FEE_BPS)
+      : (feeQuery.data?.takerFeeBps ?? DEFAULT_TAKER_FEE_BPS)
+    : 0;
+  const feeRate = bpsToRate(feeBps);
+  const feeEstimated = isReal && !feeQuery.data;
 
   const effectiveUnit: AmountUnit =
     type === "MARKET" && side === "BUY" ? unit : "BASE";
   const isMarketBuyBlocked =
     type === "MARKET" && side === "BUY" && !marketBuyAllowed;
+  /** REAL accounts send `quoteOrderQty`; DEMO converts the budget to base qty. */
+  const sendQuoteQty = isReal && effectiveUnit === "QUOTE";
 
-  /** Derived order numbers for display, validation and submit. */
+  /** Derived order amounts (Decimal) for display, validation and submit. */
   const calc = useMemo(() => {
-    const amountNum = Number(amount || 0);
     if (type === "LIMIT") {
-      const priceNum = Number(price || 0);
-      const qty = amountNum;
-      const notional = qty * priceNum;
+      const qty = dec(amount);
+      const avgPrice = dec(price);
       return {
         qty,
-        notional,
-        avgPrice: priceNum,
+        notional: qty.mul(avgPrice),
+        avgPrice,
         insufficientLiquidity: false,
       };
     }
     const levels = side === "BUY" ? (book?.asks ?? []) : (book?.bids ?? []);
     const est =
       effectiveUnit === "QUOTE"
-        ? estimateFillByQuote(levels, amountNum)
-        : estimateFillByBase(levels, amountNum);
+        ? estimateFillByQuote(levels, dec(amount).toNumber())
+        : estimateFillByBase(levels, dec(amount).toNumber());
     return {
       qty:
         effectiveUnit === "QUOTE"
-          ? Number(floorToIncrement(est.baseQty, qtyIncrement) || 0)
-          : amountNum,
-      notional: est.quoteCost,
-      avgPrice: est.avgPrice,
-      insufficientLiquidity: amountNum > 0 && est.insufficientLiquidity,
+          ? dec(floorToIncrement(est.baseQty, qtyIncrement))
+          : dec(amount),
+      notional: effectiveUnit === "QUOTE" ? dec(amount) : dec(est.quoteCost),
+      avgPrice: dec(est.avgPrice),
+      insufficientLiquidity: dec(amount).gt(0) && est.insufficientLiquidity,
     };
   }, [amount, book, effectiveUnit, price, qtyIncrement, side, type]);
 
-  const fee = calc.notional * ESTIMATED_TAKER_FEE_RATE;
+  // Fee is charged in the asset received: base on buys, quote on sells.
+  const feeAsset = side === "BUY" ? base : quote;
+  const fee =
+    side === "BUY" ? calc.qty.mul(feeRate) : calc.notional.mul(feeRate);
   const spendAsset = side === "BUY" ? quote : base;
   const spendAvailable = side === "BUY" ? available.quote : available.base;
-  const spendRequired = side === "BUY" ? calc.notional + fee : calc.qty;
+  const spendRequired = side === "BUY" ? calc.notional : calc.qty;
 
   const applyPercent = (pct: number) => {
     setPercent(pct);
@@ -272,31 +299,39 @@ export function TradeTicket({
       setAmount("");
       return;
     }
-    const share = pct / 100;
+    const share = dec(pct).div(100);
     if (side === "SELL") {
-      setAmount(floorToIncrement(available.base * share, qtyIncrement));
+      setAmount(
+        floorToIncrement(available.base.mul(share).toFixed(), qtyIncrement),
+      );
       return;
     }
-    const budget = (available.quote * share) / (1 + ESTIMATED_TAKER_FEE_RATE);
+    const budget = available.quote.mul(share);
     if (effectiveUnit === "QUOTE") {
-      setAmount(budget > 0 ? budget.toFixed(2) : "");
+      setAmount(floorToIncrement(budget.toFixed(), "0.01"));
       return;
     }
     const refPrice =
       type === "LIMIT"
-        ? Number(price || 0)
-        : estimateFillByQuote(book?.asks ?? [], budget).avgPrice;
+        ? dec(price)
+        : dec(
+            estimateFillByQuote(book?.asks ?? [], budget.toNumber()).avgPrice,
+          );
     setAmount(
-      refPrice > 0 ? floorToIncrement(budget / refPrice, qtyIncrement) : "",
+      refPrice.gt(0)
+        ? floorToIncrement(budget.div(refPrice).toFixed(), qtyIncrement)
+        : "",
     );
   };
 
   // ---- validation -------------------------------------------------------
   const qtyString =
     effectiveUnit === "QUOTE"
-      ? floorToIncrement(calc.qty, qtyIncrement)
+      ? calc.qty.gt(0)
+        ? calc.qty.toFixed()
+        : ""
       : amount;
-  const { amountError, priceError } = validateTicket({
+  const ticketErrors = validateTicket({
     // Typed-but-empty amount (e.g. quote too small to buy one step) is still an error.
     quantity: amount === "" ? "" : qtyString || "0",
     price,
@@ -310,10 +345,13 @@ export function TradeTicket({
         }
       : null,
   });
+  const amountError =
+    effectiveUnit === "QUOTE" && amount !== "" && !isDecimalString(amount, 2)
+      ? "Use up to 2 decimals"
+      : ticketErrors.amountError;
+  const { priceError } = ticketErrors;
   const insufficientBalance =
-    Boolean(account) &&
-    spendRequired > 0 &&
-    spendRequired > spendAvailable + 1e-12;
+    Boolean(account) && spendRequired.gt(0) && spendRequired.gt(spendAvailable);
 
   const canSubmit =
     Boolean(account && instrument) &&
@@ -327,14 +365,16 @@ export function TradeTicket({
     !mutation.isPending;
 
   const buildPayload = (): OrderFormInput | null => {
-    if (!account || !qtyString) return null;
+    if (!account) return null;
+    if (!sendQuoteQty && !qtyString) return null;
     return {
       accountId: account.id,
       symbol,
       side,
       type,
-      quantity: qtyString,
+      ...(sendQuoteQty ? { quoteOrderQty: amount } : { quantity: qtyString }),
       price: type === "LIMIT" ? price : undefined,
+      ...(tifEnabled ? { timeInForce: postOnly ? "GTC" : tif, postOnly } : {}),
       clientOrderId: crypto.randomUUID(),
     };
   };
@@ -495,7 +535,7 @@ export function TradeTicket({
           label="Available"
           value={
             account
-              ? `${formatFixed(spendAvailable, side === "BUY" ? 2 : qtyDecimals)} ${spendAsset}`
+              ? `${formatFixed(spendAvailable.toFixed(), side === "BUY" ? 2 : qtyDecimals)} ${spendAsset}`
               : "--"
           }
         />
@@ -503,8 +543,8 @@ export function TradeTicket({
           <Row
             label="Est. avg price"
             value={
-              calc.avgPrice > 0
-                ? formatFixed(calc.avgPrice, priceDecimals)
+              calc.avgPrice.gt(0)
+                ? formatFixed(calc.avgPrice.toFixed(), priceDecimals)
                 : "--"
             }
           />
@@ -512,26 +552,71 @@ export function TradeTicket({
         {effectiveUnit === "QUOTE" ? (
           <Row
             label={`Est. ${base}`}
-            value={formatFixed(calc.qty, qtyDecimals)}
+            value={formatFixed(calc.qty.toFixed(), qtyDecimals)}
           />
         ) : (
           <Row
             label={side === "BUY" ? "Est. cost" : "Est. proceeds"}
             value={
-              calc.notional > 0
-                ? `${formatFixed(calc.notional, 2)} ${quote}`
+              calc.notional.gt(0)
+                ? `${formatFixed(calc.notional.toFixed(), 2)} ${quote}`
                 : "--"
             }
           />
         )}
         <Row
-          label={`Est. fee (${(ESTIMATED_TAKER_FEE_RATE * 100).toFixed(2)}%)`}
-          value={fee > 0 ? `${formatFixed(fee, 4)} ${quote}` : "--"}
+          label={
+            isReal
+              ? `${feeEstimated ? "Est. fee" : "Fee"} (${dec(feeBps).div(100).toFixed()}% ${makerOnly ? "maker" : "taker"})`
+              : "Fee (demo)"
+          }
+          value={
+            !isReal
+              ? "None"
+              : fee.gt(0)
+                ? `${formatFixed(fee.toFixed(), side === "BUY" ? qtyDecimals : 4)} ${feeAsset}`
+                : "--"
+          }
           muted
         />
       </div>
 
-      {/* Post-only / IOC toggles stay hidden until SUPPORTS_TIME_IN_FORCE (API support). */}
+      {tifEnabled ? (
+        <div className="flex items-center gap-2 text-[11px]">
+          <Select
+            value={tif}
+            onValueChange={(v) => setTif(v as TimeInForce)}
+            disabled={postOnly}
+          >
+            <SelectTrigger
+              size="sm"
+              className="h-7 w-24 px-2 text-[11px]"
+              aria-label="Time in force"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="GTC" className="text-xs">
+                GTC
+              </SelectItem>
+              <SelectItem value="IOC" className="text-xs">
+                IOC
+              </SelectItem>
+              <SelectItem value="FOK" className="text-xs">
+                FOK
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <label className="ml-auto flex items-center gap-1.5 text-muted-foreground">
+            <Switch
+              size="sm"
+              checked={postOnly}
+              onCheckedChange={setPostOnly}
+            />
+            Post-only
+          </label>
+        </div>
+      ) : null}
 
       {isMarketBuyBlocked ? (
         <p className="rounded-md border border-warning/30 bg-warning/10 px-2 py-1.5 text-[11px] text-warning">
@@ -602,14 +687,31 @@ export function TradeTicket({
                 label="Price"
                 value={pending.price ? `${pending.price} ${quote}` : "Market"}
               />
-              <Row label="Amount" value={`${pending.quantity} ${base}`} />
+              <Row
+                label={pending.quoteOrderQty ? "Spend" : "Amount"}
+                value={
+                  pending.quoteOrderQty
+                    ? `${pending.quoteOrderQty} ${quote}`
+                    : `${pending.quantity} ${base}`
+                }
+              />
+              {pending.timeInForce ? (
+                <Row
+                  label="Time in force"
+                  value={`${pending.timeInForce}${pending.postOnly ? " · post-only" : ""}`}
+                />
+              ) : null}
               <Row
                 label={pending.side === "BUY" ? "Est. cost" : "Est. proceeds"}
-                value={`${formatFixed(calc.notional, 2)} ${quote}`}
+                value={`${formatFixed(calc.notional.toFixed(), 2)} ${quote}`}
               />
               <Row
-                label="Est. fee"
-                value={`${formatFixed(fee, 4)} ${quote}`}
+                label={isReal ? "Fee" : "Fee (demo)"}
+                value={
+                  isReal
+                    ? `${formatFixed(fee.toFixed(), 6)} ${feeAsset}`
+                    : "None"
+                }
                 muted
               />
             </div>

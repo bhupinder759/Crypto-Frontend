@@ -13,6 +13,7 @@ import { useDemoFaucetMutation } from "@/modules/trading/hooks/use-trading-mode"
 import { AllocationCard } from "./allocation-card";
 import { EquityCard } from "./equity-card";
 import { HoldingsTable } from "./holdings-table";
+import { RecentFillsCard } from "./recent-fills-card";
 import { RecentOrdersCard } from "./recent-orders-card";
 import { WatchlistCard } from "./watchlist-card";
 
@@ -146,6 +147,7 @@ export function PortfolioDashboard({ session }: { session: SessionPayload }) {
               equity.
             </p>
           ) : null}
+          {mode === "REAL" ? <RecentFillsCard accountId={account.id} /> : null}
           <RecentOrdersCard accountId={account.id} />
         </div>
         <div className="space-y-3">

@@ -16,6 +16,8 @@ import {
 import {
   cancelOrder,
   createOrder,
+  getFeeSchedule,
+  getFills,
   getOrder,
   getOrders,
 } from "@/modules/trading/services/trading.api";
@@ -37,9 +39,21 @@ export function useOpenOrdersQuery(accountId?: string, symbol?: string) {
   });
 }
 
-function describeStatus(order: OrderDto) {
+const REASONS: Record<string, string> = {
+  IOC_REMAINDER: "IOC remainder cancelled",
+  INSUFFICIENT_LIQUIDITY: "not enough liquidity",
+  BUDGET_EXHAUSTED: "budget used up",
+  POST_ONLY_WOULD_TAKE: "post-only would take liquidity",
+  FOK_NOT_FILLABLE: "FOK could not fill completely",
+  SELF_TRADE_PREVENTION: "self-trade prevented",
+};
+
+function describeStatus(
+  order: Pick<OrderDto, "status" | "side" | "quantity" | "symbol" | "statusReason">,
+) {
   const status = order.status.toUpperCase();
-  const label = `${order.side} ${order.quantity} ${order.symbol}`;
+  const reason = order.statusReason ? REASONS[order.statusReason] : undefined;
+  const label = `${order.side} ${order.quantity} ${order.symbol}${reason ? ` — ${reason}` : ""}`;
   if (status === "FILLED") return { kind: "success" as const, text: `Filled: ${label}` };
   if (status.startsWith("PARTIAL"))
     return { kind: "success" as const, text: `Partially filled: ${label}` };
@@ -70,11 +84,13 @@ export function useCreateOrderMutation() {
         side: payload.side,
         type: payload.type,
         price: payload.price ?? null,
-        quantity: payload.quantity,
+        quantity: payload.quantity ?? "…",
         filled: "0",
-        remaining: payload.quantity,
+        remaining: payload.quantity ?? "…",
         status: "PENDING",
         clientOrderId: payload.clientOrderId,
+        timeInForce: payload.timeInForce,
+        postOnly: payload.postOnly,
       };
       queryClient.setQueryData<OrderDto[]>(key, (current) => [
         optimistic,
@@ -88,6 +104,7 @@ export function useCreateOrderMutation() {
     },
     onSuccess: async (response) => {
       try {
+        // Real accounts return the final status; demo needs a read-back.
         const order = await getOrder(response.orderId);
         const { kind, text } = describeStatus(order);
         if (kind === "success") toast.success(text);
@@ -120,6 +137,27 @@ export function useCancelOrderMutation() {
         queryKey: ["wallet", "portfolio", payload.accountId],
       });
     },
+  });
+}
+
+/** Account fee schedule; DEMO accounts are fee-free in this exchange. */
+export function useFeeSchedule(mode: "DEMO" | "REAL", accountId?: string) {
+  return useQuery({
+    queryKey: ["account", "fees", accountId],
+    queryFn: getFeeSchedule,
+    enabled: mode === "REAL" && Boolean(accountId),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+/** Own executions (REAL only); DEMO falls back to filled orders in the UI. */
+export function useFillsQuery(accountId: string | undefined, mode: "DEMO" | "REAL", symbol?: string) {
+  return useQuery({
+    queryKey: ["orders", accountId, "fills", symbol ?? "all"],
+    queryFn: () => getFills({ accountId: accountId!, symbol, limit: 50 }),
+    enabled: mode === "REAL" && Boolean(accountId),
+    refetchInterval: 10_000,
   });
 }
 

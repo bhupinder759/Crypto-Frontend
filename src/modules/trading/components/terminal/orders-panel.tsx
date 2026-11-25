@@ -18,9 +18,11 @@ import {
 import {
   useCancelOrderMutation,
   useFillNotifications,
+  useFillsQuery,
   useOpenOrdersQuery,
 } from "@/modules/trading/hooks/use-trading";
 import type { OrderDto } from "@/modules/trading/types";
+import { FillsTable } from "@/modules/orders/components/fills-table";
 
 type Column =
   | "symbol"
@@ -207,8 +209,14 @@ export function OrdersPanel({
     () => history.filter((o) => !isOpenOrder(o)),
     [history],
   );
-  // Until the private fills stream lands (backend 2.3), fills = orders with executed size.
-  const fills = useMemo(
+  const isReal = account?.mode === "REAL";
+  const fillsQuery = useFillsQuery(
+    account?.id,
+    isReal ? "REAL" : "DEMO",
+    thisMarketOnly ? symbol : undefined,
+  );
+  // DEMO accounts have no fills endpoint: fall back to orders with executed size.
+  const filledOrders = useMemo(
     () => history.filter((o) => Number(o.filled) > 0),
     [history],
   );
@@ -303,7 +311,22 @@ export function OrdersPanel({
         )}
       </TabsContent>
       <TabsContent value="fills" className="min-h-0 flex-1 overflow-auto">
-        {historyQuery.isError ? (
+        {isReal ? (
+          fillsQuery.isError ? (
+            <QueryErrorCard
+              compact
+              className="m-2"
+              title="Couldn't load trades"
+              error={fillsQuery.error}
+              onRetry={fillsQuery.refetch}
+            />
+          ) : (
+            <FillsTable
+              fills={fillsQuery.data ?? []}
+              priceDecimals={priceDecimals}
+            />
+          )
+        ) : historyQuery.isError ? (
           <QueryErrorCard
             compact
             className="m-2"
@@ -313,7 +336,7 @@ export function OrdersPanel({
           />
         ) : (
           <OrdersTable
-            orders={fills}
+            orders={filledOrders}
             columns={["symbol", "side", "type", "price", "filled", "status"]}
             priceDecimals={priceDecimals}
             empty="No trades yet"

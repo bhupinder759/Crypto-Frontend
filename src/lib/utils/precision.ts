@@ -1,3 +1,5 @@
+import { isStepMultiple } from "@/lib/utils/decimal";
+
 /**
  * Number of decimals implied by an increment such as "0.01" or "1e-8".
  * Returns `fallback` when the increment is missing or invalid.
@@ -45,23 +47,8 @@ export function formatFixed(
   }).format(num);
 }
 
-function toScaled(value: string, decimals: number): bigint | null {
-  const match = value.trim().match(/^(\d*)(?:\.(\d*))?$/);
-  if (!match) return null;
-  const int = match[1] || "0";
-  const frac = (match[2] ?? "").padEnd(decimals, "0");
-  if (frac.length > decimals && /[1-9]/.test(frac.slice(decimals))) return null;
-  return BigInt(int + frac.slice(0, decimals));
-}
-
 /** Exact decimal check that `value` is a positive multiple of `increment`. */
 export function isMultipleOf(value: string, increment: string): boolean {
-  const decimals = Math.max(
-    (value.split(".")[1] ?? "").length,
-    (increment.split(".")[1] ?? "").length,
-  );
-  const v = toScaled(value, decimals);
-  const inc = toScaled(increment, decimals);
-  if (v == null || inc == null || inc === BigInt(0)) return false;
-  return v > BigInt(0) && v % inc === BigInt(0);
+  if (!/^\d*\.?\d*$/.test(value.trim()) || value.trim() === "") return false;
+  return isStepMultiple(value, increment);
 }

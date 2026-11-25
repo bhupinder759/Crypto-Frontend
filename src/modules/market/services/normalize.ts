@@ -74,7 +74,8 @@ export function normalizeTicker(raw: unknown, symbol: string): TickerDto | null 
   if (!raw || typeof raw !== "object") return null;
   const t = raw as Record<string, unknown>;
   const last = t.lastPrice ?? t.last ?? t.price ?? t.close;
-  if (last == null) return null;
+  // The engine ticker reports "0" until the first trade: treat as no data.
+  if (last == null || !(Number(last) > 0)) return null;
   return {
     symbol: String(t.symbol ?? symbol),
     lastPrice: toDecimalString(last),

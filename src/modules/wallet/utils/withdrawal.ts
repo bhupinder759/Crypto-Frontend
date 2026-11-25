@@ -1,3 +1,5 @@
+import { dec } from "@/lib/utils/decimal";
+
 /**
  * Withdrawal rules shown in the UI. The backend takes only amount + address
  * (USD ledger), so networks and fees here are display estimates.
@@ -45,7 +47,7 @@ export type WithdrawErrors = { amount?: string; address?: string };
 export function validateWithdrawal(input: {
   amount: string;
   address: string;
-  available: number;
+  available: number | string;
   network: WithdrawNetwork;
 }): WithdrawErrors {
   const errors: WithdrawErrors = {};
