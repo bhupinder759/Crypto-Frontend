@@ -1,19 +1,54 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import { AppProviders } from "@/components/providers/app-providers";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
 
-const bodyFont = IBM_Plex_Sans({
+// Self-hosted (via @fontsource files) so builds never depend on Google Fonts.
+const bodyFont = localFont({
   variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  src: [
+    {
+      path: "../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-700-normal.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
 });
 
-const headingFont = Space_Grotesk({
+const headingFont = localFont({
   variable: "--font-heading",
-  subsets: ["latin"],
-  weight: ["500", "700"],
+  display: "swap",
+  src: [
+    {
+      path: "../../node_modules/@fontsource/space-grotesk/files/space-grotesk-latin-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../node_modules/@fontsource/space-grotesk/files/space-grotesk-latin-700-normal.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
 });
 
 export const metadata: Metadata = {
