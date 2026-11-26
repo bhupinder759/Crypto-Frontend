@@ -15,7 +15,7 @@ export function usePortfolioQuery(accountId?: string) {
     queryKey: ["wallet", "portfolio", accountId],
     queryFn: () => getPortfolio(accountId!),
     enabled: Boolean(accountId),
-    refetchInterval: 10_000,
+    refetchInterval: 20_000,
   });
 }
 
@@ -24,7 +24,7 @@ export function useDepositsQuery(enabled = true) {
     queryKey: ["wallet", "deposits"],
     queryFn: () => getDeposits(),
     enabled,
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -33,7 +33,7 @@ export function useWithdrawalsQuery(enabled = true) {
     queryKey: ["wallet", "withdrawals"],
     queryFn: () => getWithdrawals(),
     enabled,
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
   });
 }
 

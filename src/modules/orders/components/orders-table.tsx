@@ -1,7 +1,7 @@
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/common/empty-state";
 import { formatNumber } from "@/lib/utils/formatter";
+import { OrderSide, OrderStatusBadge } from "@/modules/orders/utils/order-status";
 import type { OrderDto } from "@/modules/trading/types";
 
 export function OrdersTable({ orders }: { orders: OrderDto[] }) {
@@ -30,14 +30,16 @@ export function OrdersTable({ orders }: { orders: OrderDto[] }) {
         {orders.map((order) => (
           <TableRow key={order.id}>
             <TableCell>{order.symbol}</TableCell>
-            <TableCell>{order.side}</TableCell>
-            <TableCell>{order.type}</TableCell>
-            <TableCell>{formatNumber(order.price ?? 0, 2)}</TableCell>
-            <TableCell>{formatNumber(order.quantity, 4)}</TableCell>
             <TableCell>
-              <Badge variant={order.status === "FILLED" ? "success" : "info"}>
-                {order.status}
-              </Badge>
+              <OrderSide side={order.side} />
+            </TableCell>
+            <TableCell>{order.type}</TableCell>
+            <TableCell>
+              {order.price == null ? "Market" : formatNumber(order.price, 8)}
+            </TableCell>
+            <TableCell>{formatNumber(order.quantity, 8)}</TableCell>
+            <TableCell>
+              <OrderStatusBadge status={order.status} />
             </TableCell>
           </TableRow>
         ))}

@@ -32,8 +32,7 @@ export function DemoFaucetCard() {
             await mutation.mutateAsync({
               amount: String(formData.get("amount") ?? ""),
               operation: String(formData.get("operation") ?? "ADD") as
-                | "ADD"
-                | "SET",
+                "ADD" | "SET",
               asset: "USD",
             });
           }}

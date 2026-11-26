@@ -14,15 +14,16 @@ export function useAdminOverviewQuery() {
   return useQuery({
     queryKey: ["admin", "overview"],
     queryFn: getAdminOverview,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }
 
-export function useAdminRecentUsersQuery(limit = 12) {
+export function useAdminUsersQuery(limit = 500) {
   return useQuery({
-    queryKey: ["admin", "users", "recent", limit],
+    queryKey: ["admin", "users", "all", limit],
     queryFn: () => getRecentAdminUsers(limit),
-    refetchInterval: 30_000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
   });
 }
 
@@ -30,7 +31,7 @@ export function useAdminPendingWithdrawalsQuery(limit = 20) {
   return useQuery({
     queryKey: ["admin", "withdrawals", "pending", limit],
     queryFn: () => getPendingWithdrawals(limit),
-    refetchInterval: 10_000,
+    refetchInterval: 20_000,
   });
 }
 
@@ -43,6 +44,7 @@ export function useApproveWithdrawalMutation() {
       queryClient.invalidateQueries({ queryKey: ["admin"] });
       toast.success("Withdrawal approved");
     },
+    onError: (error) => toast.error(error.message || "Approve failed"),
   });
 }
 
@@ -56,5 +58,6 @@ export function useRejectWithdrawalMutation() {
       queryClient.invalidateQueries({ queryKey: ["admin"] });
       toast.success("Withdrawal rejected");
     },
+    onError: (error) => toast.error(error.message || "Reject failed"),
   });
 }

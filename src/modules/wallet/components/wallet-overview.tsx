@@ -1,16 +1,13 @@
 "use client";
 
+import { QueryErrorCard } from "@/components/common/query-error-card";
 import { PageHeader } from "@/components/common/page-header";
+import { usePortfolioOverview } from "@/modules/portfolio/hooks/use-portfolio";
 import { DemoFaucetCard } from "@/modules/wallet/components/demo-faucet-card";
-import { DepositForm } from "@/modules/wallet/components/deposit-form";
-import { WalletBalanceList } from "@/modules/wallet/components/wallet-balance-list";
-import { WalletHistory } from "@/modules/wallet/components/wallet-history";
-import { WithdrawForm } from "@/modules/wallet/components/withdraw-form";
-import {
-  useDepositsQuery,
-  usePortfolioQuery,
-  useWithdrawalsQuery,
-} from "@/modules/wallet/hooks/use-wallet";
+import { DepositCard } from "./deposit-card";
+import { WalletBalances } from "./wallet-balances";
+import { WalletHistory } from "./wallet-history";
+import { WithdrawCard } from "./withdraw-card";
 
 export function WalletOverview({
   accountId,
@@ -19,37 +16,46 @@ export function WalletOverview({
   accountId?: string;
   mode: "DEMO" | "REAL";
 }) {
-  const portfolioQuery = usePortfolioQuery(accountId);
-  const depositsQuery = useDepositsQuery(mode === "REAL");
-  const withdrawalsQuery = useWithdrawalsQuery(mode === "REAL");
+  const { holdings, totals, balancesQuery, isLoading } =
+    usePortfolioOverview(accountId);
+  const usdAvailable = holdings.find((h) => h.asset === "USD")?.available ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
-        eyebrow="Custody"
-        title="Wallet Operations"
+        title="Wallet"
         description={
           mode === "DEMO"
-            ? "Review your demo wallet and instantly top it up with virtual funds."
-            : "Review balances, register deposits, and request withdrawals against the backend wallet workflows."
+            ? "Demo balances. Top up virtual funds anytime."
+            : "Balances, deposits and withdrawals."
         }
       />
-      <WalletBalanceList balances={portfolioQuery.data ?? []} />
-      <div className="grid gap-6 xl:grid-cols-2">
-        {mode === "DEMO" ? (
-          <DemoFaucetCard />
-        ) : (
-          <>
-            <DepositForm />
-            <WithdrawForm />
-          </>
-        )}
-      </div>
-      {mode === "REAL" ? (
-        <WalletHistory
-          deposits={depositsQuery.data ?? []}
-          withdrawals={withdrawalsQuery.data ?? []}
+      {balancesQuery.isError ? (
+        <QueryErrorCard
+          title="Couldn't load balances"
+          error={balancesQuery.error}
+          onRetry={balancesQuery.refetch}
+          retrying={balancesQuery.isFetching}
         />
+      ) : (
+        <WalletBalances
+          holdings={holdings}
+          totals={totals}
+          loading={isLoading}
+        />
+      )}
+      {mode === "DEMO" ? (
+        <div className="grid gap-3 xl:grid-cols-2">
+          <DemoFaucetCard />
+        </div>
+      ) : accountId ? (
+        <>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <DepositCard accountId={accountId} />
+            <WithdrawCard available={usdAvailable} />
+          </div>
+          <WalletHistory />
+        </>
       ) : null}
     </div>
   );

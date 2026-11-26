@@ -16,3 +16,8 @@ export async function apiPut<T, TBody = unknown>(url: string, body?: TBody) {
   const response = await api.put<T>(url, body);
   return response.data;
 }
+
+export async function apiDelete<T = unknown>(url: string) {
+  const response = await api.delete<T>(url);
+  return response.data;
+}

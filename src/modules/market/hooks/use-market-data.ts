@@ -12,7 +12,6 @@ import {
   getInstruments,
   getOrderBook,
   getSymbols,
-  getTicker,
   getTrades,
   updateChartPreference,
 } from "@/modules/market/services/market.api";
@@ -26,15 +25,6 @@ export function useSymbolsQuery() {
     queryKey: ["market", "symbols"],
     queryFn: getSymbols,
     staleTime: 60_000,
-  });
-}
-
-export function useTickerQuery(symbol: string) {
-  return useQuery({
-    queryKey: ["market", "ticker", symbol],
-    queryFn: () => getTicker(symbol),
-    enabled: Boolean(symbol),
-    refetchInterval: 15_000,
   });
 }
 
@@ -55,19 +45,7 @@ export function useTradesQuery(symbol: string) {
     queryKey: ["market", "trades", symbol],
     queryFn: () => getTrades(symbol),
     enabled: Boolean(symbol),
-    refetchInterval: 15_000,
-  });
-}
-
-export function useCandlesQuery(symbol: string, interval = "1m") {
-  return useQuery({
-    queryKey: ["market", "candles", symbol, interval],
-    queryFn: async () => {
-      const response = await getCandlesPage(symbol, interval, 120);
-      return response.items;
-    },
-    enabled: Boolean(symbol),
-    staleTime: 15_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -89,15 +67,19 @@ export function useOrderBookQuery(symbol: string) {
     queryKey: ["market", "orderbook", symbol],
     queryFn: () => getOrderBook(symbol),
     enabled: Boolean(symbol),
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
   });
 }
 
-export function useChartPreferenceQuery(symbol: string, interval: string) {
+export function useChartPreferenceQuery(
+  symbol: string,
+  interval: string,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["market", "chart-preference", symbol, interval],
     queryFn: () => getChartPreference(symbol, interval),
-    enabled: Boolean(symbol && interval),
+    enabled: enabled && Boolean(symbol && interval),
     staleTime: 60_000,
   });
 }

@@ -19,7 +19,10 @@ export function getWithdrawals(limit = 20) {
   return apiGet<WithdrawalDto[]>("/wallet/withdrawals", { limit });
 }
 
-export function requestWithdrawal(payload: { amount: string; address: string }) {
+export function requestWithdrawal(payload: {
+  amount: string;
+  address: string;
+}) {
   return apiPost<{ message: string; withdrawalId: string }, typeof payload>(
     "/wallet/withdraw",
     payload,

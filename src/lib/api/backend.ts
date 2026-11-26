@@ -1,13 +1,17 @@
-import { cookies } from "next/headers";
+import { cookies, headers as requestHeaders } from "next/headers";
 import { env } from "@/config/env";
 import {
   AUTH_COOKIE_NAME,
+  REFRESH_COOKIE_NAME,
   TRADING_MODE_COOKIE_NAME,
 } from "@/lib/constants/config";
+import { applyTokenCookies, refreshSession } from "@/lib/api/session-tokens";
 
 type BackendFetchOptions = RequestInit & {
   token?: string;
   searchParams?: URLSearchParams;
+  /** Internal: set after one transparent refresh to avoid loops. */
+  retried?: boolean;
 };
 
 export class BackendRequestError extends Error {
@@ -39,6 +43,18 @@ export async function backendFetch<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  // Pass the end-user IP so backend rate limits apply per client, not per BFF.
+  try {
+    const incoming = await requestHeaders();
+    const forwardedFor = incoming.get("x-forwarded-for") ?? incoming.get("x-real-ip");
+    if (forwardedFor) headers.set("X-Forwarded-For", forwardedFor);
+    // So "Active sessions" shows the real browser instead of "node".
+    const userAgent = incoming.get("user-agent");
+    if (userAgent) headers.set("User-Agent", userAgent);
+  } catch {
+    // Outside a request scope (e.g. build): nothing to forward.
+  }
+
   if (tradingMode === "DEMO" || tradingMode === "REAL") {
     headers.set("X-Trading-Mode", tradingMode);
   }
@@ -56,6 +72,20 @@ export async function backendFetch<T>(
       `Backend service unavailable at ${env.backendHttpUrl}. Start the backend and retry.`,
       503,
     );
+  }
+
+  // Access token expired/revoked: refresh once and replay (only for cookie auth).
+  if (response.status === 401 && !options.token && !options.retried) {
+    const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value;
+    const tokens = refreshToken ? await refreshSession(refreshToken) : null;
+    if (tokens) {
+      try {
+        applyTokenCookies((name, value, opts) => cookieStore.set(name, value, opts), tokens);
+      } catch {
+        // Server Components can't set cookies; the proxy refreshes on the next request.
+      }
+      return backendFetch<T>(path, { ...options, token: tokens.accessToken, retried: true });
+    }
   }
 
   if (!response.ok) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { AccountDto, TradingMode } from "@/modules/auth/types";
 import { useTradingModeMutation } from "@/modules/trading/hooks/use-trading-mode";
 import { useTradingModeStore } from "@/modules/trading/store/trading-mode.store";
@@ -30,26 +30,41 @@ export function TradingModeToggle({
 
   const activeMode = hydrated ? mode : initialMode;
 
+  const options: { value: TradingMode; label: string; disabled: boolean }[] = [
+    { value: "DEMO", label: "Demo", disabled: false },
+    { value: "REAL", label: "Real", disabled: !realAccount },
+  ];
+
   return (
-    <div className="flex items-center gap-1 rounded-2xl border border-border/60 bg-card p-1">
-      <Button
-        type="button"
-        variant={activeMode === "REAL" ? "default" : "ghost"}
-        size="sm"
-        disabled={!realAccount || mutation.isPending}
-        onClick={() => mutation.mutate("REAL")}
-      >
-        Real
-      </Button>
-      <Button
-        type="button"
-        variant={activeMode === "DEMO" ? "default" : "ghost"}
-        size="sm"
-        disabled={mutation.isPending}
-        onClick={() => mutation.mutate("DEMO")}
-      >
-        Demo
-      </Button>
+    <div
+      role="radiogroup"
+      aria-label="Trading mode"
+      className="flex h-7 items-center rounded-md border border-border bg-card p-0.5 text-xs"
+    >
+      {options.map((option) => {
+        const active = activeMode === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            disabled={option.disabled || mutation.isPending}
+            title={option.disabled ? "No real account yet" : undefined}
+            onClick={() => !active && mutation.mutate(option.value)}
+            className={cn(
+              "h-full rounded-[5px] px-2 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+              active
+                ? option.value === "DEMO"
+                  ? "bg-warning/15 text-warning"
+                  : "bg-buy/15 text-buy"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -1,13 +1,16 @@
 "use client";
 
 import { apiGet, apiPost } from "@/lib/api/api-client";
-import type { OrderDto, OrderFormInput } from "@/modules/trading/types";
+import type {
+  CreateOrderResponse,
+  FeeScheduleDto,
+  FillDto,
+  OrderDto,
+  OrderFormInput,
+} from "@/modules/trading/types";
 
 export function createOrder(payload: OrderFormInput) {
-  return apiPost<{ message: string; orderId: string }, OrderFormInput>(
-    "/orders",
-    payload,
-  );
+  return apiPost<CreateOrderResponse, OrderFormInput>("/orders", payload);
 }
 
 export function cancelOrder(payload: { orderId: string; accountId: string }) {
@@ -28,4 +31,15 @@ export function getOrders(params: {
 
 export function getOrder(id: string) {
   return apiGet<OrderDto>(`/orders/${id}`);
+}
+
+/** Own executions (REAL accounts only; DEMO accounts get 403). */
+export async function getFills(params: { accountId: string; symbol?: string; limit?: number }) {
+  const raw = await apiGet<unknown>("/orders/fills", params);
+  return Array.isArray(raw) ? (raw as FillDto[]) : [];
+}
+
+/** Maker/taker fees for the active REAL account. */
+export function getFeeSchedule() {
+  return apiGet<FeeScheduleDto>("/accounts/fees");
 }

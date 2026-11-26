@@ -1,12 +1,16 @@
 "use client";
 
 import { apiGet, apiPut } from "@/lib/api/api-client";
+import {
+  normalizeCandle,
+  normalizeOrderBook,
+  normalizeTrades,
+} from "@/modules/market/services/normalize";
 import type {
   CandlePageResponseDto,
   ChartPreferenceResponseDto,
   InstrumentDto,
   OrderBookDto,
-  TickerDto,
   TradeDto,
 } from "@/types/api.types";
 import type {
@@ -25,30 +29,33 @@ export function getInstruments(symbol?: string) {
   );
 }
 
-export function getTicker(symbol: string) {
-  return apiGet<TickerDto>("/market/ticker", { symbol });
+export async function getTrades(symbol: string, limit = 50): Promise<TradeDto[]> {
+  return normalizeTrades(
+    // Live tape (upstream + exchange fills), same source as the `trades` stream.
+    await apiGet<unknown>("/market/trades", { symbol, limit, source: "external" }),
+  );
 }
 
-export function getTrades(symbol: string, limit = 50) {
-  return apiGet<TradeDto[]>("/market/trades", { symbol, limit });
-}
-
-export function getCandlesPage(
+export async function getCandlesPage(
   symbol: string,
   interval = "1m",
   limit = 120,
   beforeTimestamp?: number,
-) {
-  return apiGet<CandlePageResponseDto>("/market/candles", {
+): Promise<CandlePageResponseDto> {
+  const page = await apiGet<CandlePageResponseDto>("/market/candles", {
     symbol,
     interval,
     limit,
     ...(beforeTimestamp ? { beforeTimestamp } : {}),
   });
+  // OHLCV arrive as decimal strings; charts and indicators need numbers.
+  return { ...page, items: (page?.items ?? []).map(normalizeCandle) };
 }
 
-export function getOrderBook(symbol: string) {
-  return apiGet<OrderBookDto | null>("/market/orderbook", { symbol });
+export async function getOrderBook(symbol: string): Promise<OrderBookDto | null> {
+  return normalizeOrderBook(
+    await apiGet<unknown>("/market/orderbook", { symbol }),
+  );
 }
 
 export function getChartPreference(symbol: string, interval: string) {
