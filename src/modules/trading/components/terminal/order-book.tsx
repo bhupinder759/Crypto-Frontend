@@ -50,6 +50,7 @@ const BookRow = memo(function BookRow({
       ref={ref}
       type="button"
       onClick={() => onPick(price)}
+      aria-label={`${side === "bid" ? "Bid" : "Ask"} ${price}, size ${formatFixed(size, sizeDecimals)}. Use this price`}
       className="relative grid h-[18px] w-full shrink-0 grid-cols-3 items-center px-2 text-[11px] leading-none tabular hover:bg-accent/70"
     >
       <span

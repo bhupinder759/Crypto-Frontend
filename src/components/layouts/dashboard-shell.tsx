@@ -32,6 +32,12 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-svh bg-background">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+      >
+        Skip to content
+      </a>
       <AppSidebar role={role} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
@@ -54,7 +60,7 @@ export function DashboardShell({
           </div>
           <TickerTape />
         </header>
-        <main className="flex-1 px-3 py-4 pb-20 lg:px-4 lg:pb-6">
+        <main id="main" tabIndex={-1} className="flex-1 px-3 py-4 pb-20 outline-none lg:px-4 lg:pb-6">
           {children}
         </main>
       </div>

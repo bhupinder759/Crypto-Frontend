@@ -134,6 +134,12 @@
     @apply font-heading;
   }
 
+  /* Visible keyboard focus for custom controls (shadcn parts set their own rings). */
+  :where(button, a, [role="radio"], [role="tab"], [tabindex]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
+
   /* Numbers line up in tables, tickers and order books. */
   table,
   [data-numeric] {

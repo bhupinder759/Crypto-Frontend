@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { AppProviders } from "@/components/providers/app-providers";
 import { siteConfig } from "@/config/site";
@@ -50,6 +50,14 @@ const headingFont = localFont({
   ],
   fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
 });
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#16181d" },
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfc" },
+  ],
+  colorScheme: "dark light",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

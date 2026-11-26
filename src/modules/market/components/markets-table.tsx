@@ -83,6 +83,10 @@ const MarketRow = memo(function MarketRow({
   return (
     <tr
       onClick={() => onOpen(market.symbol)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && event.target === event.currentTarget) onOpen(market.symbol);
+      }}
+      tabIndex={0}
       className="h-11 cursor-pointer border-b border-border/60 text-xs hover:bg-accent/50"
     >
       <td className="w-8 pl-2">
