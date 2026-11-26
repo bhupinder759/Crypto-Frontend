@@ -2,6 +2,7 @@
 
 import { apiGet, apiPut } from "@/lib/api/api-client";
 import {
+  normalizeCandle,
   normalizeOrderBook,
   normalizeTrades,
 } from "@/modules/market/services/normalize";
@@ -35,18 +36,20 @@ export async function getTrades(symbol: string, limit = 50): Promise<TradeDto[]>
   );
 }
 
-export function getCandlesPage(
+export async function getCandlesPage(
   symbol: string,
   interval = "1m",
   limit = 120,
   beforeTimestamp?: number,
-) {
-  return apiGet<CandlePageResponseDto>("/market/candles", {
+): Promise<CandlePageResponseDto> {
+  const page = await apiGet<CandlePageResponseDto>("/market/candles", {
     symbol,
     interval,
     limit,
     ...(beforeTimestamp ? { beforeTimestamp } : {}),
   });
+  // OHLCV arrive as decimal strings; charts and indicators need numbers.
+  return { ...page, items: (page?.items ?? []).map(normalizeCandle) };
 }
 
 export async function getOrderBook(symbol: string): Promise<OrderBookDto | null> {

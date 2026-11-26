@@ -145,8 +145,14 @@ export function SymbolBar({
   );
 
   const stats = useMemo(() => {
-    // The live ticker (~1/s) is the source of truth; candles fill gaps.
-    const last = ticker ? Number(ticker.lastPrice) : (lastCandle?.close ?? null);
+    // Newest of the live ticker and the live candle wins (either stream can lag).
+    const candleIsNewer =
+      lastCandle != null && (!ticker || (lastCandle.eventTime ?? 0) > ticker.eventTime);
+    const last = candleIsNewer
+      ? Number(lastCandle.close)
+      : ticker
+        ? Number(ticker.lastPrice)
+        : null;
     const high = Math.max(Number(ticker?.high24h ?? 0), lastCandle?.high ?? 0);
     const lowCandidates = [Number(ticker?.low24h), lastCandle?.low].filter(
       (v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0,

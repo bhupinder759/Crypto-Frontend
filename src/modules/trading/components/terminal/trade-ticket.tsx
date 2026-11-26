@@ -44,6 +44,7 @@ import {
   useLiveOrderBook,
 } from "@/modules/trading/hooks/use-trading";
 import { useTicketStore } from "@/modules/trading/store/ticket.store";
+import { useTickersStore } from "@/modules/market/store/tickers.store";
 import { validateTicket } from "@/modules/trading/utils/ticket-validation";
 import { useTradingStore } from "@/modules/trading/store/trading.store";
 import type { OrderFormInput, TimeInForce } from "@/modules/trading/types";
@@ -215,7 +216,8 @@ export function TradeTicket({
 
   const bestBid = book?.bids[0]?.[0];
   const bestAsk = book?.asks[0]?.[0];
-  const seedSource = (side === "BUY" ? bestAsk : bestBid) ?? lastClose;
+  const lastTicker = useTickersStore((s) => s.bySymbol[symbol]?.lastPrice ?? null);
+  const seedSource = (side === "BUY" ? bestAsk : bestBid) ?? lastClose ?? lastTicker;
   // Book levels arrive as "57776.13000000": normalise to the instrument tick.
   const seedPrice =
     seedSource != null && dec(seedSource).gt(0)

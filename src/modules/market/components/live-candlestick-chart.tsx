@@ -39,6 +39,7 @@ import type {
 } from "@/modules/market/types/chart-workspace";
 import type { MarketData } from "@/modules/market/types/market-data";
 import { readChartPalette } from "@/modules/market/utils/chart-theme";
+import { normalizeCandle } from "@/modules/market/services/normalize";
 
 type CandlestickPoint = {
   time: Time;
@@ -655,10 +656,11 @@ export function LiveCandlestickChart({
       return;
     }
 
-    const handleLiveCandle = (payload: MarketData) => {
-      if (payload.symbol !== symbol || payload.interval !== interval) {
+    const handleLiveCandle = (raw: MarketData) => {
+      if (raw.symbol !== symbol || raw.interval !== interval) {
         return;
       }
+      const payload = normalizeCandle(raw);
 
       seriesRef.current?.update(toChartPoint(payload));
       setLiveCandle(payload);

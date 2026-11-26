@@ -11,7 +11,11 @@ import type {
 
 type RawLevel =
   | [string | number, string | number]
-  | { price: string | number; quantity?: string | number; size?: string | number };
+  | {
+      price: string | number;
+      quantity?: string | number;
+      size?: string | number;
+    };
 
 function toDecimalString(value: unknown): string {
   if (typeof value === "string") return value;
@@ -52,13 +56,16 @@ export function normalizeOrderBook(raw: unknown): OrderBookDto | null {
 export function normalizeTrade(raw: unknown): TradeDto | null {
   if (!raw || typeof raw !== "object") return null;
   const trade = raw as Record<string, unknown>;
-  const timestamp = trade.timestamp ?? trade.time ?? trade.createdAt ?? Date.now();
+  const timestamp =
+    trade.timestamp ?? trade.time ?? trade.createdAt ?? Date.now();
   const side = String(trade.side ?? trade.takerSide ?? "").toUpperCase();
   const buyOrderId = String(trade.buyOrderId ?? "");
   const sellOrderId = String(trade.sellOrderId ?? "");
   return {
     id: String(
-      trade.id ?? trade.tradeId ?? `${buyOrderId}-${sellOrderId}-${String(timestamp)}`,
+      trade.id ??
+        trade.tradeId ??
+        `${buyOrderId}-${sellOrderId}-${String(timestamp)}`,
     ),
     symbol: String(trade.symbol ?? ""),
     price: toDecimalString(trade.price),
@@ -75,7 +82,10 @@ export function normalizeTrades(raw: unknown): TradeDto[] {
   return raw.map(normalizeTrade).filter((t): t is TradeDto => t !== null);
 }
 
-export function normalizeTicker(raw: unknown, symbol: string): TickerDto | null {
+export function normalizeTicker(
+  raw: unknown,
+  symbol: string,
+): TickerDto | null {
   if (!raw || typeof raw !== "object") return null;
   const t = raw as Record<string, unknown>;
   const last = t.lastPrice ?? t.last ?? t.price ?? t.close;
@@ -119,5 +129,36 @@ export function normalizeMarketTicker(raw: unknown): MarketTickerDto | null {
     priceChangePercent24h: percent,
     eventTime: Number(t.eventTime ?? Date.now()),
     source: String(t.source ?? "internal"),
+  };
+}
+
+/** Candle with numeric OHLCV (backend sends decimal strings). */
+export function normalizeCandle<
+  T extends {
+    open: unknown;
+    high: unknown;
+    low: unknown;
+    close: unknown;
+    volume: unknown;
+    time: unknown;
+  },
+>(
+  candle: T,
+): T & {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  time: number;
+} {
+  return {
+    ...candle,
+    time: Number(candle.time),
+    open: Number(candle.open),
+    high: Number(candle.high),
+    low: Number(candle.low),
+    close: Number(candle.close),
+    volume: Number(candle.volume),
   };
 }

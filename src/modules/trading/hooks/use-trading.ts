@@ -308,7 +308,9 @@ export function useLiveOrderBook(symbol: string): OrderBookDto | null {
   );
   const query = useOrderBookQuery(symbol);
   if (hasLevels(internal)) return internal;
-  return external ?? internal ?? query.data ?? null;
+  if (hasLevels(external)) return external;
+  if (hasLevels(query.data ?? null)) return query.data ?? null;
+  return internal ?? external ?? query.data ?? null;
 }
 
 export function useLiveTrades(symbol: string) {
