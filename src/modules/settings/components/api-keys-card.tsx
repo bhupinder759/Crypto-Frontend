@@ -75,6 +75,9 @@ export function ApiKeysCard() {
   const [created, setCreated] = useState<CreatedApiKeyDto | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
 
+  const keys = query.data ?? [];
+  const activeKeys = keys.filter((k) => !k.revokedAt);
+  const revokedCount = keys.length - activeKeys.length;
   const ipList = ips.split(/[\s,]+/).filter(Boolean);
   const ipError = ipList.find((ip) => !IP_RE.test(ip));
   const withdrawWithoutIps =
@@ -111,13 +114,13 @@ export function ApiKeysCard() {
         <div className="space-y-2 p-3">
           <Skeleton className="h-10 w-full" />
         </div>
-      ) : (query.data ?? []).length === 0 ? (
+      ) : activeKeys.length === 0 ? (
         <p className="py-6 text-center text-xs text-muted-foreground">
-          No API keys yet.
+          No active API keys{revokedCount ? ` (${revokedCount} revoked)` : ""}.
         </p>
       ) : (
         <ul className="divide-y divide-border/60">
-          {(query.data ?? []).map((key) => (
+          {activeKeys.map((key) => (
             <li
               key={key.id}
               className="flex flex-wrap items-center gap-3 px-3 py-2.5 text-xs"

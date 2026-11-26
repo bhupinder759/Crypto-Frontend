@@ -132,7 +132,8 @@ export function AlertForm({
 export function AlertsCard() {
   const query = useAlertsQuery();
   const remove = useDeleteAlert();
-  const alerts = query.data ?? [];
+  // Deleting an alert cancels it server-side; cancelled ones are history noise.
+  const alerts = (query.data ?? []).filter((a) => a.status !== "CANCELLED");
   const active = alerts.filter((a) => a.status === "ACTIVE");
 
   return (

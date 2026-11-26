@@ -30,6 +30,7 @@ export interface ApiKeyDto {
   ipWhitelist: string[];
   createdAt: string;
   lastUsedAt: string | null;
+  revokedAt: string | null;
 }
 
 export interface CreatedApiKeyDto extends ApiKeyDto {
@@ -50,6 +51,7 @@ function normalizeKey(raw: Record<string, unknown>): ApiKeyDto {
       : [],
     createdAt: String(raw.createdAt ?? ""),
     lastUsedAt: (raw.lastUsedAt as string | null) ?? null,
+    revokedAt: (raw.revokedAt as string | null) ?? null,
   };
 }
 

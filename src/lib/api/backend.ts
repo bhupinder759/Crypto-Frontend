@@ -48,6 +48,9 @@ export async function backendFetch<T>(
     const incoming = await requestHeaders();
     const forwardedFor = incoming.get("x-forwarded-for") ?? incoming.get("x-real-ip");
     if (forwardedFor) headers.set("X-Forwarded-For", forwardedFor);
+    // So "Active sessions" shows the real browser instead of "node".
+    const userAgent = incoming.get("user-agent");
+    if (userAgent) headers.set("User-Agent", userAgent);
   } catch {
     // Outside a request scope (e.g. build): nothing to forward.
   }
