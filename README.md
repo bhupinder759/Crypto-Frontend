@@ -14,8 +14,6 @@ httpOnly cookies.
 | --- | --- |
 | ![Portfolio dashboard](docs/screenshots/dashboard.png) | ![Trading terminal](docs/screenshots/terminal.png) |
 | ![Markets](docs/screenshots/markets.png) | ![Wallet](docs/screenshots/wallet.png) |
-| ![Settings — security](docs/screenshots/settings.png) | ![Admin console](docs/screenshots/admin.png) |
-| ![Mobile terminal](docs/screenshots/mobile.png) | |
 
 ## Features
 
