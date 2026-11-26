@@ -40,6 +40,7 @@ import {
 } from "@/modules/trading/constants";
 import {
   useCreateOrderMutation,
+  useEngineOrderBook,
   useFeeSchedule,
   useLiveOrderBook,
 } from "@/modules/trading/hooks/use-trading";
@@ -195,7 +196,11 @@ export function TradeTicket({
   const [tif, setTif] = useState<TimeInForce>("GTC");
   const [postOnly, setPostOnly] = useState(false);
 
-  const book = useLiveOrderBook(symbol);
+  const displayBook = useLiveOrderBook(symbol);
+  const engineBook = useEngineOrderBook(symbol);
+  // REAL orders execute on the exchange engine, so estimate against its book;
+  // DEMO fills at the reference market price, so the displayed book is right.
+  const book = account?.mode === "REAL" ? engineBook : displayBook;
   const lastClose = useTradingStore(
     (s) => s.realtimeBySymbol[symbol]?.lastCandle?.close ?? null,
   );
@@ -214,8 +219,8 @@ export function TradeTicket({
     ? instrument.supportedOrderTypes.includes("MARKET")
     : true;
 
-  const bestBid = book?.bids[0]?.[0];
-  const bestAsk = book?.asks[0]?.[0];
+  const bestBid = book?.bids[0]?.[0] ?? displayBook?.bids[0]?.[0];
+  const bestAsk = book?.asks[0]?.[0] ?? displayBook?.asks[0]?.[0];
   const lastTicker = useTickersStore((s) => s.bySymbol[symbol]?.lastPrice ?? null);
   const seedSource = (side === "BUY" ? bestAsk : bestBid) ?? lastClose ?? lastTicker;
   // Book levels arrive as "57776.13000000": normalise to the instrument tick.
@@ -630,7 +635,9 @@ export function TradeTicket({
         </p>
       ) : calc.insufficientLiquidity ? (
         <p className="text-[11px] text-warning">
-          Not enough liquidity on the book for this size.
+          {(side === "BUY" ? book?.asks.length : book?.bids.length)
+            ? "Not enough liquidity on the book for this size."
+            : "No resting orders on the exchange book yet — use a limit order."}
         </p>
       ) : insufficientBalance ? (
         <p className="text-[11px] text-destructive">

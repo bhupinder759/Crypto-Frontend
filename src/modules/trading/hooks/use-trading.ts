@@ -290,6 +290,11 @@ export function useMarketStreams(symbol: string, interval: string) {
   ]);
 }
 
+/** The exchange matching-engine book only (what REAL orders execute against). */
+export function useEngineOrderBook(symbol: string): OrderBookDto | null {
+  return useTradingStore((s) => s.realtimeBySymbol[symbol]?.internalOrderBook ?? null);
+}
+
 function hasLevels(book: OrderBookDto | null) {
   return Boolean(book && (book.bids.length > 0 || book.asks.length > 0));
 }
